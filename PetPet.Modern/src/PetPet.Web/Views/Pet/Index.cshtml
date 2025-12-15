@@ -1,0 +1,51 @@
+@model IEnumerable<PetPet.Domain.Entities.Pet>
+@{
+    ViewData["Title"] = "我的萌寵";
+}
+
+<div class="row mb-4 align-items-center">
+    <div class="col-8">
+        <h1 class="display-6">🐶 我的萌寵</h1>
+        <p class="text-muted">管理您的寶貝寵物資料</p>
+    </div>
+    <div class="col-4 text-end">
+        <a asp-action="Create" class="btn btn-lg btn-warning text-white rounded-pill shadow-sm">
+            ➕ 新增寵物
+        </a>
+    </div>
+</div>
+
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    @foreach (var item in Model)
+    {
+        <div class="col">
+            <div class="card glass-card h-100">
+                <div class="position-relative">
+                    <img src="https://placehold.co/600x400/orange/white?text=@item.Name" class="card-img-top" alt="@item.Name">
+                    <span class="position-absolute top-0 end-0 m-2 badge rounded-pill bg-light text-dark shadow-sm">
+                        @(item.Gender ? "♂️ 男生" : "♀️ 女生")
+                    </span>
+                </div>
+                <div class="card-body text-center">
+                    <h5 class="card-title fw-bold mb-1">@item.Name</h5>
+                    <p class="text-muted small">品種編號: @item.VarietyId</p>
+                </div>
+                <div class="card-footer bg-transparent border-top-0 pb-3 text-center">
+                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('確定要移除 @item.Name 嗎？');">
+                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill w-100">🗑️ 移除</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="col-12 text-center mt-5">
+            <div class="text-muted display-1 mb-3">🐕</div>
+            <h3>目前沒有寵物資料</h3>
+            <p>趕快幫您的寶貝建檔吧！</p>
+            <a asp-action="Create" class="btn btn-warning text-white mt-2">立即新增</a>
+        </div>
+    }
+</div>

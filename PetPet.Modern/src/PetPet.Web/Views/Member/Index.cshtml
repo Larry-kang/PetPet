@@ -1,0 +1,44 @@
+@model IEnumerable<PetPet.Domain.Entities.Member>
+@{
+    ViewData["Title"] = "會員列表";
+}
+
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>👥 會員列表</h1>
+        <a asp-action="Register" class="btn btn-success">➕ 新增會員</a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>姓名</th>
+                            <th>Email</th>
+                            <th>電話</th>
+                            <th>狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model) {
+                            <tr>
+                                <td>@Html.DisplayFor(modelItem => item.Name)</td>
+                                <td>@Html.DisplayFor(modelItem => item.Email)</td>
+                                <td>@Html.DisplayFor(modelItem => item.Phone)</td>
+                                <td>
+                                    @if(item.IsEnabled) {
+                                        <span class="badge bg-success">啟用</span>
+                                    } else {
+                                        <span class="badge bg-secondary">停用</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

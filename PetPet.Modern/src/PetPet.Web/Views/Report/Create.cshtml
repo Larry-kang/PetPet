@@ -1,0 +1,44 @@
+@model PetPet.Domain.Entities.Report
+
+@{
+    ViewData["Title"] = "檢舉貼文";
+}
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card glass-card border-0">
+            <div class="card-header bg-transparent border-bottom-0 text-center pt-4">
+                <h3 class="fw-bold text-danger">⚠️ 檢舉貼文</h3>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-warning mb-4">
+                    <strong>檢舉對象：</strong> @ViewData["PostAuthor"]<br>
+                    <strong>貼文標題：</strong> @ViewData["PostTitle"]
+                </div>
+
+                <form asp-action="Create">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="PostId" />
+
+                    <div class="mb-3">
+                        <label asp-for="Reason" class="form-label fw-bold">檢舉理由</label>
+                        <select asp-for="Reason" class="form-select form-select-lg" required>
+                            <option value="">請選擇理由...</option>
+                            <option value="暴力或令人反感的內容">暴力或令人反感的內容</option>
+                            <option value="騷擾或霸凌">騷擾或霸凌</option>
+                            <option value="不實資訊">不實資訊</option>
+                            <option value="垃圾訊息">垃圾訊息</option>
+                            <option value="其他">其他</option>
+                        </select>
+                        <span asp-validation-for="Reason" class="text-danger"></span>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-danger btn-lg rounded-pill">送出檢舉</button>
+                        <a asp-controller="Post" asp-action="Index" class="btn btn-light btn-lg rounded-pill">取消</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

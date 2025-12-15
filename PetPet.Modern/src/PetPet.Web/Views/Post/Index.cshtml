@@ -1,0 +1,109 @@
+@model IEnumerable<PetPet.Domain.Entities.Post>
+@{
+    ViewData["Title"] = "寵物社群牆";
+}
+
+<div class="row mb-4 align-items-center">
+    <div class="col-8">
+        <h1 class="display-6">🐾 寵物社群牆</h1>
+        <p class="text-muted">即時分享毛孩的點點滴滴</p>
+    </div>
+    <div class="col-4 text-end">
+        <a asp-action="Create" class="btn btn-lg btn-success rounded-pill shadow-sm">
+            ✏️ 發佈貼文
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    @foreach (var item in Model)
+    {
+        <div class="col-md-8 mx-auto mb-4">
+            <div class="card glass-card h-100">
+                <div class="card-header bg-transparent border-bottom-0 pt-3 ps-4 d-flex align-items-center">
+                    <div class="rounded-circle bg-light d-flex justify-content-center align-items-center text-secondary fw-bold me-2" style="width: 40px; height: 40px;">
+                        @(item.Author.Name.Substring(0,1))
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold">@item.Author.Name</h6>
+                        <small class="text-muted">@item.CreatedAt.ToString("yyyy/MM/dd HH:mm")</small>
+                    </div>
+                    @if (User.Identity!.Name == item.Author.Name)
+                    {
+                        <div class="ms-auto">
+                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('確定要刪除這篇貼文嗎？');">
+                                <button type="submit" class="btn btn-sm btn-link text-danger p-0">刪除</button>
+                            </form>
+                        </div>
+                    }
+                </div>
+                <div class="card-body ps-4 pe-4">
+                    <h5 class="card-title fw-bold">@item.Title</h5>
+                    <p class="card-text text-dark" style="white-space: pre-line;">@item.Content</p>
+                </div>
+                <div class="card-footer bg-transparent border-top-0 pb-3 ps-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex gap-2">
+                            @{
+                                var isLiked = item.Likes.Any(l => l.UserEmail == User.Identity!.Name);
+                                var likeCount = item.Likes.Count;
+                            }
+                            <form asp-action="Like" asp-route-id="@item.Id" method="post">
+                                <button type="submit" class="btn btn-sm rounded-pill @(isLiked ? "btn-danger" : "btn-outline-danger")">
+                                    @(isLiked ? "❤️" : "🤍") 喜歡 (@likeCount)
+                                </button>
+                            </form>
+                            
+                            <button class="btn btn-sm btn-outline-primary rounded-pill" type="button" data-bs-toggle="collapse" data-bs-target="#comments-@item.Id">
+                                💬 留言 (@item.Comments.Count)
+                            </button>
+                        </div>
+
+                        @if (User.Identity!.Name != item.Author.Name)
+                        {
+                            <a asp-controller="Report" asp-action="Create" asp-route-postId="@item.Id" class="text-muted small text-decoration-none">
+                                ⚠️ 檢舉
+                            </a>
+                        }
+                    </div>
+
+                    <!-- Comments Section -->
+                    <div class="collapse" id="comments-@item.Id">
+                        <div class="card card-body bg-light border-0 small p-3">
+                            <!-- Comment Form -->
+                            <form asp-action="AddComment" method="post" class="mb-3 d-flex gap-2">
+                                <input type="hidden" name="postId" value="@item.Id" />
+                                <input type="text" name="content" class="form-control form-control-sm rounded-pill" placeholder="寫些什麼..." required />
+                                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">送出</button>
+                            </form>
+
+                            <!-- Comment List -->
+                            @if (item.Comments.Any())
+                            {
+                                <div class="vstack gap-2">
+                                    @foreach(var comment in item.Comments.OrderBy(c => c.CreatedAt))
+                                    {
+                                        <div class="d-flex gap-2">
+                                            <div class="fw-bold">@(comment.Author?.Name ?? "會員")</div>
+                                            <div class="text-dark">@comment.Content</div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="col-12 text-center mt-5">
+            <div class="text-muted display-1 mb-3">📭</div>
+            <h3>目前還沒有貼文</h3>
+            <p>成為第一個分享的人吧！</p>
+            <a asp-action="Create" class="btn btn-primary mt-2">立即發文</a>
+        </div>
+    }
+</div>

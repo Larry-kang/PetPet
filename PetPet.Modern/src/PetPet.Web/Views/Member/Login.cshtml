@@ -1,0 +1,40 @@
+@{
+    ViewData["Title"] = "會員登入";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-4">
+        <div class="card glass-card mt-5">
+            <div class="card-header bg-transparent border-bottom-0 text-center pt-4">
+                <h3 class="card-title mb-0 fw-bold text-primary">🔐 會員登入</h3>
+            </div>
+            <div class="card-body px-5 pb-5">
+                <form asp-action="Login" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input name="email" type="email" class="form-control" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">密碼</label>
+                        <input name="password" type="password" class="form-control" required />
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">登入</button>
+                        <a asp-action="Register" class="btn btn-outline-primary">還沒有帳號？立即註冊</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (ViewData["Error"] != null)
+{
+    <div class="alert alert-danger mt-3 text-center">
+        @ViewData["Error"]
+    </div>
+}
