@@ -1,0 +1,48 @@
+﻿@{
+    ViewData["Title"] = "歡迎來到 PetPet";
+}
+
+<div class="container text-center mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h1 class="display-3 fw-bold text-primary mb-4">🐾 PetPet</h1>
+            <p class="lead text-muted mb-5">
+                專屬於毛孩與主人的溫馨社群。<br>
+                分享生活、記錄成長、結交新朋友。
+            </p>
+            
+            <div class="d-grid gap-3 d-sm-flex justify-content-sm-center mb-5">
+                <a asp-controller="Member" asp-action="Register" class="btn btn-warning btn-lg px-5 py-3 text-white fw-bold shadow-sm rounded-pill">
+                    🚀 立即加入
+                </a>
+                <a asp-controller="Member" asp-action="Login" class="btn btn-outline-secondary btn-lg px-5 py-3 rounded-pill">
+                    🔐 會員登入
+                </a>
+            </div>
+
+            <div class="row mt-5 g-4 py-5 row-cols-1 row-cols-lg-3">
+                <div class="col">
+                    <div class="card glass-card h-100 p-4 border-0">
+                        <div class="display-4 mb-3">📸</div>
+                        <h4 class="fw-bold">分享動態</h4>
+                        <p class="text-muted">上傳照片，記錄每一刻萌樣。</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card glass-card h-100 p-4 border-0">
+                        <div class="display-4 mb-3">🐶</div>
+                        <h4 class="fw-bold">寵物名片</h4>
+                        <p class="text-muted">為您的寶貝建立專屬檔案。</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card glass-card h-100 p-4 border-0">
+                        <div class="display-4 mb-3">🤝</div>
+                        <h4 class="fw-bold">結交朋友</h4>
+                        <p class="text-muted">認識更多喜愛動物的夥伴。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

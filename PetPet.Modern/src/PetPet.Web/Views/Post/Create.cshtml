@@ -1,0 +1,41 @@
+@model PetPet.Domain.Entities.Post
+@{
+    ViewData["Title"] = "新增貼文";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow border-0">
+                <div class="card-body p-5">
+                    <h2 class="card-title text-center mb-4">✏️ 發佈新貼文</h2>
+                    
+                    <form asp-action="Create">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Title" class="form-label fw-bold">標題</label>
+                            <input asp-for="Title" class="form-control form-control-lg" placeholder="例如：今天帶狗狗去公園玩..." required />
+                            <span asp-validation-for="Title" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Content" class="form-label fw-bold">內容</label>
+                            <textarea asp-for="Content" class="form-control" rows="6" placeholder="分享一些有趣的故事吧..." required></textarea>
+                            <span asp-validation-for="Content" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a asp-action="Index" class="btn btn-light me-md-2">取消</a>
+                            <button type="submit" class="btn btn-primary btn-lg px-5">發佈</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

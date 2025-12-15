@@ -1,0 +1,57 @@
+@model PetPet.Domain.Entities.Pet
+@{
+    ViewData["Title"] = "新增寵物";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-0">
+                <div class="card-body p-5">
+                    <h2 class="card-title text-center mb-4">🐾 新增寵物</h2>
+                    
+                    <form asp-action="Create">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label fw-bold">寵物名字</label>
+                            <input asp-for="Name" class="form-control form-control-lg" required />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">性別</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" asp-for="Gender" value="true" id="genderMale" checked>
+                                    <label class="form-check-label" for="genderMale">♂️ 男生</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" asp-for="Gender" value="false" id="genderFemale">
+                                    <label class="form-check-label" for="genderFemale">♀️ 女生</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Temporary: Allow inputting Variety ID directly for now -->
+                        <div class="mb-4">
+                            <label asp-for="VarietyId" class="form-label fw-bold">品種編號</label>
+                            <input asp-for="VarietyId" class="form-control" type="number" value="1" min="1" required />
+                            <div class="form-text">暫時手動輸入品種 ID (未來會改為下拉選單)</div>
+                            <span asp-validation-for="VarietyId" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a asp-action="Index" class="btn btn-light me-md-2">取消</a>
+                            <button type="submit" class="btn btn-warning text-white btn-lg px-5">新增</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
