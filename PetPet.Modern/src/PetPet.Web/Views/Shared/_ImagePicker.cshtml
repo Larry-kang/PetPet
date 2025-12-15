@@ -1,0 +1,116 @@
+<!-- Image Picker Modal -->
+<div class="modal fade" id="imagePickerModal" tabindex="-1" aria-labelledby="imagePickerLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content glass-card border-0">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-white" id="imagePickerLabel">🖼️ 選擇圖片</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs border-secondary mb-3" id="imgTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active text-white" id="preset-tab" data-bs-toggle="tab" data-bs-target="#preset" type="button" role="tab">🎨 精選圖庫</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link text-white" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload" type="button" role="tab">📤 上傳圖片</button>
+                    </li>
+                </ul>
+                <div class="tab-content" id="imgTabContent">
+                    <!-- Presets -->
+                    <div class="tab-pane fade show active" id="preset" role="tabpanel">
+                        <div id="presetGrid" class="row g-3">
+                            <!-- JS will populate -->
+                            <div class="text-center text-white-50">Loading...</div>
+                        </div>
+                    </div>
+                    <!-- Upload -->
+                    <div class="tab-pane fade text-center py-5" id="upload" role="tabpanel">
+                        <div class="mb-3">
+                            <input class="form-control bg-dark text-white border-secondary" type="file" id="fileUploadInput" accept="image/*">
+                        </div>
+                        <button class="btn btn-primary" onclick="uploadImage()">🚀 開始上傳</button>
+                        <div id="uploadStatus" class="mt-2 text-white-50"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let targetInputId = '';
+    let targetPreviewId = '';
+
+    function openImagePicker(inputId, previewId) {
+        targetInputId = inputId;
+        targetPreviewId = previewId;
+        
+        // Load Presets
+        loadPresets();
+        
+        // Show Modal
+        const modal = new bootstrap.Modal(document.getElementById('imagePickerModal'));
+        modal.show();
+    }
+
+    function loadPresets() {
+        fetch('/Image/Presets')
+            .then(res => res.json())
+            .then(data => {
+                const grid = document.getElementById('presetGrid');
+                grid.innerHTML = '';
+                data.forEach(url => {
+                    const col = document.createElement('div');
+                    col.className = 'col-6 col-md-3';
+                    col.innerHTML = `
+                        <div class="card bg-transparent border-0 cursor-pointer hover-scale" onclick="selectImage('${url}')">
+                            <img src="${url}" class="card-img-top rounded-3" style="width: 100%; height: 100px; object-fit: cover;">
+                        </div>
+                    `;
+                    grid.appendChild(col);
+                });
+            });
+    }
+
+    function uploadImage() {
+        const input = document.getElementById('fileUploadInput');
+        if (!input.files[0]) return;
+
+        const formData = new FormData();
+        formData.append('file', input.files[0]);
+
+        document.getElementById('uploadStatus').innerText = 'Uploading...';
+
+        fetch('/Image/Upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => {
+            if(!res.ok) throw new Error('Upload failed');
+            return res.json();
+        })
+        .then(data => {
+            selectImage(data.url);
+            document.getElementById('uploadStatus').innerText = 'Success!';
+        })
+        .catch(err => {
+            document.getElementById('uploadStatus').innerText = 'Error: ' + err.message;
+        });
+    }
+
+    function selectImage(url) {
+        if (targetInputId) document.getElementById(targetInputId).value = url;
+        if (targetPreviewId) document.getElementById(targetPreviewId).src = url;
+        
+        // Close Modal
+        const el = document.getElementById('imagePickerModal');
+        const modal = bootstrap.Modal.getInstance(el);
+        modal.hide();
+    }
+</script>
+
+<style>
+    .cursor-pointer { cursor: pointer; }
+    .hover-scale { transition: transform 0.2s; }
+    .hover-scale:hover { transform: scale(1.05); }
+</style>

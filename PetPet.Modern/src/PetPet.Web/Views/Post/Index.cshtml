@@ -21,8 +21,15 @@
         <div class="col-md-8 mx-auto mb-4">
             <div class="card glass-card h-100">
                 <div class="card-header bg-transparent border-bottom-0 pt-3 ps-4 d-flex align-items-center">
-                    <div class="rounded-circle bg-light d-flex justify-content-center align-items-center text-secondary fw-bold me-2" style="width: 40px; height: 40px;">
-                        @(item.Author.Name.Substring(0,1))
+                    <div class="rounded-circle bg-light d-flex justify-content-center align-items-center text-secondary fw-bold me-2 overflow-hidden" style="width: 40px; height: 40px;">
+                        @if (!string.IsNullOrEmpty(item.Author.Photo))
+                        {
+                            <img src="@item.Author.Photo" class="w-100 h-100 object-fit-cover">
+                        }
+                        else
+                        {
+                            @(item.Author.Name.Length > 0 ? item.Author.Name.Substring(0,1) : "?")
+                        }
                     </div>
                     <div>
                         <h6 class="mb-0 fw-bold">@item.Author.Name</h6>
@@ -37,9 +44,15 @@
                         </div>
                     }
                 </div>
-                <div class="card-body ps-4 pe-4">
-                    <h5 class="card-title fw-bold">@item.Title</h5>
-                    <p class="card-text text-dark" style="white-space: pre-line;">@item.Content</p>
+                <div class="card-body p-0">
+                    @if (!string.IsNullOrEmpty(item.ImageUrl))
+                    {
+                        <img src="@item.ImageUrl" class="w-100 object-fit-cover" style="max-height: 400px;" alt="@item.Title">
+                    }
+                    <div class="p-4">
+                        <h5 class="card-title fw-bold">@item.Title</h5>
+                        <p class="card-text text-dark" style="white-space: pre-line;">@item.Content</p>
+                    </div>
                 </div>
                 <div class="card-footer bg-transparent border-top-0 pb-3 ps-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">

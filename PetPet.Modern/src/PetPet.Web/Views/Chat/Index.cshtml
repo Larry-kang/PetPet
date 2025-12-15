@@ -1,0 +1,153 @@
+@model List<PetPet.Domain.Entities.Message>
+@{
+    ViewData["Title"] = "聊天室";
+    string currentEmail = ViewBag.CurrentEmail;
+    string targetEmail = ViewBag.TargetEmail;
+    string targetName = ViewBag.TargetName;
+    var contacts = ViewBag.Contacts as List<PetPet.Domain.Entities.Member>;
+}
+
+<div class="container py-4" style="height: 85vh;">
+    <div class="row h-100">
+        <!-- Contacts Sidebar -->
+        <div class="col-md-4 h-100 overflow-auto">
+            <div class="glass-card p-3 h-100">
+                <h4 class="mb-3">💬 聯絡人</h4>
+                <div class="list-group">
+                    @foreach (var contact in contacts)
+                    {
+                        <a href="/Chat/Index?with=@contact.Email" class="list-group-item list-group-item-action @(targetEmail == contact.Email ? "active" : "") d-flex align-items-center bg-transparent border-0 text-white">
+                            <img src="/images/default-user.png" class="rounded-circle me-3" width="40" height="40" />
+                            <div>
+                                <div class="fw-bold">@contact.Name</div>
+                                <small class="text-white-50">Click to chat</small>
+                            </div>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="col-md-8 h-100">
+            @if (!string.IsNullOrEmpty(targetEmail))
+            {
+                <div class="glass-card p-0 h-100 d-flex flex-column">
+                    <!-- Header -->
+                    <div class="p-3 border-bottom border-secondary bg-white bg-opacity-10">
+                        <h5 class="m-0">Talking with <strong>@targetName</strong></h5>
+                    </div>
+
+                    <!-- Messages -->
+                    <div id="messagesList" class="flex-grow-1 p-3 overflow-auto d-flex flex-column gap-2">
+                        @foreach (var msg in Model)
+                        {
+                            <div class="d-flex @(msg.SenderEmail == currentEmail ? "justify-content-end" : "justify-content-start")">
+                                <div class="p-2 px-3 rounded-4 params" 
+                                     style="max-width: 70%; background-color: @(msg.SenderEmail == currentEmail ? "#0d6efd" : "#495057");">
+                                    @msg.Content
+                                    <div class="text-end" style="font-size: 0.7em; opacity: 0.7;">@msg.SentAt.ToString("HH:mm")</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Input -->
+                    <div class="p-3 border-top border-secondary bg-white bg-opacity-10">
+                        <div class="input-group">
+                            <input type="text" id="messageInput" class="form-control bg-dark text-white border-secondary" placeholder="Type a message..." autocomplete="off">
+                            <button class="btn btn-primary" id="sendButton">✈️ Send</button>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="glass-card h-100 d-flex align-items-center justify-content-center">
+                    <div class="text-center text-white-50">
+                        <h1>👈</h1>
+                        <p>請選擇一位聯絡人開始聊天</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/chatHub")
+            .build();
+
+        // Receive Message
+        connection.on("ReceiveMessage", function (senderEmail, message) {
+            const currentTarget = "@targetEmail";
+            const myEmail = "@currentEmail";
+
+            if (senderEmail === currentTarget || senderEmail === myEmail) {
+                const isMe = senderEmail === myEmail;
+                const alignment = isMe ? "justify-content-end" : "justify-content-start";
+                const bg = isMe ? "#0d6efd" : "#495057";
+                
+                const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                const html = `
+                    <div class="d-flex ${alignment}">
+                        <div class="p-2 px-3 rounded-4 params" 
+                             style="max-width: 70%; background-color: ${bg};">
+                            ${message} // 
+                            <div class="text-end" style="font-size: 0.7em; opacity: 0.7;">${time}</div>
+                        </div>
+                    </div>`;
+                
+                const list = document.getElementById("messagesList");
+                list.insertAdjacentHTML('beforeend', html);
+                list.scrollTop = list.scrollHeight;
+            }
+        });
+
+        connection.start().then(function () {
+            document.getElementById("sendButton").disabled = false;
+        }).catch(function (err) {
+            return console.error(err.toString());
+        });
+
+        // Send Message
+        document.getElementById("sendButton")?.addEventListener("click", function (event) {
+            const message = document.getElementById("messageInput").value;
+            const targetEmail = "@targetEmail";
+
+            if(message && targetEmail) {
+                // UI Optimistic Update
+                const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                 const html = `
+                    <div class="d-flex justify-content-end">
+                        <div class="p-2 px-3 rounded-4 params" 
+                             style="max-width: 70%; background-color: #0d6efd;">
+                            ${message}
+                            <div class="text-end" style="font-size: 0.7em; opacity: 0.7;">${time}</div>
+                        </div>
+                    </div>`;
+                 const list = document.getElementById("messagesList");
+                 list.insertAdjacentHTML('beforeend', html);
+                 list.scrollTop = list.scrollHeight;
+
+                 // Invoke Hub
+                 connection.invoke("SendMessage", targetEmail, message).catch(function (err) {
+                    return console.error(err.toString());
+                });
+                
+                document.getElementById("messageInput").value = "";
+            }
+            event.preventDefault();
+        });
+        
+        // Auto Scroll to bottom on load
+        window.onload = function() {
+            const list = document.getElementById("messagesList");
+            if(list) list.scrollTop = list.scrollHeight;
+        };
+    </script>
+}
