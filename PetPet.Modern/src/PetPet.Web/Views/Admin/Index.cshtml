@@ -1,0 +1,37 @@
+@{
+    ViewData["Title"] = "後台管理系統";
+}
+
+<div class="container py-5">
+    <h1 class="text-white mb-4">👮‍♂️ 管理員控制台</h1>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="glass-card p-4 text-center">
+                <h3>👥 會員總數</h3>
+                <p class="display-4 fw-bold">@ViewBag.UserCount</p>
+                <a href="/Admin/ManageUsers" class="btn btn-light btn-sm mt-2">管理會員</a>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="glass-card p-4 text-center">
+                <h3>📝 貼文總數</h3>
+                <p class="display-4 fw-bold">@ViewBag.PostCount</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="glass-card p-4 text-center">
+                <h3>📢 最新消息</h3>
+                <p class="display-4 fw-bold">@ViewBag.NewsCount</p>
+                <a href="/News/Create" class="btn btn-light btn-sm mt-2">發布消息</a>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="glass-card p-4 text-center">
+                <h3>⚠️ 舉報案件</h3>
+                <p class="display-4 fw-bold text-danger">@ViewBag.ReportCount</p>
+                <a href="/Admin/ManageReports" class="btn btn-light btn-sm mt-2">查看舉報</a>
+            </div>
+        </div>
+    </div>
+</div>

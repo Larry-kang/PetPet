@@ -1,0 +1,62 @@
+@model List<PetPet.Domain.Entities.Member>
+@{
+    ViewData["Title"] = "會員管理";
+}
+
+<div class="container py-5">
+    <h2 class="text-white mb-4">👥 會員管理</h2>
+    
+    <div class="glass-card p-4">
+        <table class="table table-hover text-white">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>姓名</th>
+                    <th>電話</th>
+                    <th>狀態</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model)
+                {
+                    <tr>
+                        <td>
+                            @user.Email
+                            @if(user.IsAdmin) { <span class="badge bg-warning text-dark ms-2">Admin</span> }
+                        </td>
+                        <td>@user.Name</td>
+                        <td>@user.Phone</td>
+                        <td>
+                            @if (user.IsEnabled)
+                            {
+                                <span class="badge bg-success">正常</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">停權</span>
+                            }
+                        </td>
+                        <td>
+                            @if (!user.IsAdmin)
+                            {
+                                <form asp-action="ToggleUser" method="post" style="display:inline;">
+                                    <input type="hidden" name="email" value="@user.Email" />
+                                    @if (user.IsEnabled)
+                                    {
+                                        <button type="submit" class="btn btn-danger btn-sm">停權</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="btn btn-success btn-sm">啟用</button>
+                                    }
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <a href="/Admin/Index" class="btn btn-outline-light mt-3">回控制台</a>
+    </div>
+</div>

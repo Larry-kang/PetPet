@@ -36,12 +36,24 @@ public class MemberController : Controller
             return View();
         }
 
+        if (!member.IsEnabled)
+        {
+            ViewData["Error"] = "此帳號已被停權";
+            return View();
+        }
+
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.Name, member.Name),
             new Claim(ClaimTypes.Email, member.Email),
-            new Claim("MemberId", member.Email) // Use Email as ID
+            new Claim(ClaimTypes.NameIdentifier, member.Email), // Critical for SignalR
+            new Claim("MemberId", member.Email) // Legacy support
         };
+
+        if (member.IsAdmin)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+        }
 
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var authProperties = new AuthenticationProperties();

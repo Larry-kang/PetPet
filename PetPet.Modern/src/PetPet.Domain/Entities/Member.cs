@@ -15,6 +15,7 @@ public class Member
     public string? Photo { get; set; } // Mem_photo
     public bool IsEnabled { get; set; } // Enable
     public bool IsMatchEnabled { get; set; } // Match_Enable
+    public bool IsAdmin { get; set; } // Admin Role
 
     // Navigation
     public virtual ICollection<Pet> Pets { get; set; } = new List<Pet>();

@@ -25,6 +25,21 @@
                             <span asp-validation-for="Content" class="text-danger"></span>
                         </div>
 
+                        <!-- Cover Image Picker -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">封面圖片 (選填)</label>
+                            <div class="p-3 border rounded bg-light">
+                                <img id="previewCover" src="" class="img-fluid rounded mb-2 d-none" style="max-height: 200px;">
+                                <div class="input-group">
+                                    <input asp-for="ImageUrl" id="inputCover" class="form-control" placeholder="選擇圖片..." readonly />
+                                    <button type="button" class="btn btn-outline-secondary" onclick="openImagePicker('inputCover', 'previewCover')">
+                                        📷 選擇
+                                    </button>
+                                </div>
+                                <small class="text-muted">點擊選擇可以看到預覽圖。</small>
+                            </div>
+                        </div>
+
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <a asp-action="Index" class="btn btn-light me-md-2">取消</a>
                             <button type="submit" class="btn btn-primary btn-lg px-5">發佈</button>
@@ -38,4 +53,20 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <partial name="_ImagePicker" />
+    <script>
+        // Custom Hook to show image when ID is updated
+        const originalSelectImage = selectImage; // Backup logic
+        
+        // Simple observer to un-hide the img tag if src is set
+         const imgPreview = document.getElementById('previewCover');
+         const imgInput = document.getElementById('inputCover');
+         
+         const observer = new MutationObserver(function(mutations) {
+            if(imgPreview.src && imgPreview.src !== window.location.href) {
+                imgPreview.classList.remove('d-none');
+            }
+         });
+         observer.observe(imgPreview, { attributes: true, attributeFilter: ['src'] });
+    </script>
 }

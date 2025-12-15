@@ -1,0 +1,67 @@
+@model List<PetPet.Infrastructure.Services.MatchResultDto>
+@{
+    ViewData["Title"] = "配對專區";
+}
+
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold text-white" style="text-shadow: 0 2px 4px rgba(0,0,0,0.2);">💘 緣分匹配</h1>
+        <p class="text-white-50">為您的毛小孩尋找最佳玩伴！</p>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="glass-card text-center p-5">
+            <h3>😔 目前沒有適合的配對對象</h3>
+            <p>請稍後再來，或擴大您的搜尋範圍。</p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var match in Model)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="glass-card h-100 p-0 overflow-hidden position-relative">
+                        <!-- Match Score Badge -->
+                        <div class="position-absolute top-0 end-0 m-3 badge rounded-pill bg-danger fs-5 shadow">
+                            @match.Score% 速配
+                        </div>
+
+                        <!-- Photo -->
+                        <div class="ratio ratio-4x3">
+                             <img src="@(string.IsNullOrEmpty(match.TargetMember.Photo) ? "/images/default-user.png" : match.TargetMember.Photo)" 
+                                  class="object-fit-cover" alt="@match.TargetMember.Name">
+                        </div>
+
+                        <div class="p-4 text-center">
+                            <h3 class="fw-bold">@match.TargetMember.Name</h3>
+                            
+                            @if (match.PrimaryPet != null)
+                            {
+                                <p class="text-muted mb-2">
+                                    <span class="badge bg-info text-dark">Variety: @match.PrimaryPet.VarietyId</span>
+                                    <span>@(match.TargetMember.CityId == 1 ? "台北" : "其他")</span>
+                                </p>
+                            }
+
+                            <!-- Reasons -->
+                            <div class="mb-4">
+                                @foreach (var reason in match.MatchReasons)
+                                {
+                                    <span class="badge bg-success bg-opacity-75 me-1">@reason</span>
+                                }
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <a href="/Chat/Index?with=@match.TargetMember.Email" class="btn btn-primary rounded-pill">
+                                    💬 發起聊天
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

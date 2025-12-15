@@ -38,6 +38,20 @@
                             <span asp-validation-for="Phone" class="text-danger"></span>
                         </div>
 
+                        <!-- Photo Picker -->
+                        <div class="mb-4 text-center">
+                            <label class="form-label d-block text-start">個人頭像</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <img id="previewPhoto" src="/images/default-user.png" class="rounded-circle border border-2 border-white shadow-sm object-fit-cover" width="80" height="80">
+                                <div>
+                                    <input type="hidden" asp-for="Photo" id="inputPhoto" />
+                                    <button type="button" class="btn btn-outline-light btn-sm" onclick="openImagePicker('inputPhoto', 'previewPhoto')">
+                                        📷 選擇照片
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary btn-lg">立即註冊</button>
                             <a asp-action="Index" class="btn btn-outline-secondary">返回列表</a>
@@ -51,4 +65,5 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <partial name="_ImagePicker" />
 }

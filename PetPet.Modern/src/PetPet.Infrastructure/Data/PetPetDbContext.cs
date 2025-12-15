@@ -14,7 +14,9 @@ public class PetPetDbContext : DbContext
     public DbSet<Post> Posts => Set<Post>();
     public DbSet<News> News => Set<News>();
     public DbSet<Report> Reports => Set<Report>();
-    public DbSet<Like> Likes => Set<Like>();
+    public DbSet<Like> Likes { get; set; }
+    public DbSet<Friend> Friends { get; set; }
+    public DbSet<Message> Messages { get; set; }
     public DbSet<Comment> Comments => Set<Comment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -84,6 +86,34 @@ public class PetPetDbContext : DbContext
                    .WithMany(p => p.Likes)
                    .HasForeignKey(l => l.PostId)
                    .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Friend Configuration
+        modelBuilder.Entity<Friend>(entity =>
+        {
+            entity.HasOne(f => f.Requester)
+                  .WithMany()
+                  .HasForeignKey(f => f.RequesterEmail)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(f => f.Addressee)
+                  .WithMany()
+                  .HasForeignKey(f => f.AddresseeEmail)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Message Configuration
+        modelBuilder.Entity<Message>(entity =>
+        {
+            entity.HasOne(m => m.Sender)
+                  .WithMany()
+                  .HasForeignKey(m => m.SenderEmail)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(m => m.Receiver)
+                  .WithMany()
+                  .HasForeignKey(m => m.ReceiverEmail)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Post Configuration
