@@ -9,9 +9,26 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=db;Database=PetPetDB;User Id=sa;Password=YourStrongPassword123;TrustServerCertificate=True;
+      - RabbitMq__Host=rabbitmq
+      - RabbitMq__Username=guest
+      - RabbitMq__Password=guest
     depends_on:
       db:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: petpet_rabbitmq
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest

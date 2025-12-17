@@ -4,23 +4,139 @@
     string currentEmail = ViewBag.CurrentEmail;
     string targetEmail = ViewBag.TargetEmail;
     string targetName = ViewBag.TargetName;
+    string targetPhoto = ViewBag.TargetPhoto ?? "/images/default-user.png";
     var contacts = ViewBag.Contacts as List<PetPet.Domain.Entities.Member>;
 }
 
-<div class="container py-4" style="height: 85vh;">
-    <div class="row h-100">
-        <!-- Contacts Sidebar -->
-        <div class="col-md-4 h-100 overflow-auto">
-            <div class="glass-card p-3 h-100">
-                <h4 class="mb-3">💬 聯絡人</h4>
-                <div class="list-group">
+<style>
+    /* Chat Container */
+    .chat-layout {
+        height: 85vh;
+        border-radius: 20px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(20px);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    /* Sidebar */
+    .chat-sidebar {
+        background: rgba(255, 255, 255, 0.5);
+        border-right: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .contact-item {
+        transition: all 0.2s;
+        border-radius: 12px;
+        margin-bottom: 4px;
+        border: none;
+    }
+    .contact-item:hover {
+        background: rgba(255, 255, 255, 0.8);
+        transform: translateX(5px);
+    }
+    .contact-item.active {
+        background: #fff;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        border-left: 4px solid #0d6efd;
+    }
+
+    /* Chat Area */
+    .chat-main {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .chat-header {
+        background: rgba(255, 255, 255, 0.8);
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        padding: 15px 20px;
+    }
+
+    .messages-area {
+        background-color: #f8f9fa; 
+        background-image: radial-gradient(#dee2e6 1px, transparent 1px);
+        background-size: 20px 20px;
+    }
+
+    /* Bubbles */
+    .bubble {
+        max-width: 70%;
+        padding: 12px 18px;
+        position: relative;
+        font-size: 0.95rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .bubble-me {
+        background: linear-gradient(135deg, #0d6efd, #0a58ca);
+        color: white;
+        border-radius: 18px 18px 4px 18px;
+        align-self: flex-end;
+    }
+
+    .bubble-other {
+        background: #ffffff;
+        color: #333;
+        border-radius: 18px 18px 18px 4px;
+        align-self: flex-start;
+    }
+
+    .bubble-time {
+        font-size: 0.7rem;
+        opacity: 0.7;
+        margin-top: 4px;
+        text-align: right;
+    }
+
+    /* Input Area */
+    .chat-input-area {
+        background: white;
+        padding: 20px;
+        border-top: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .chat-input {
+        background: #f1f3f5;
+        border: none;
+        border-radius: 25px;
+        padding: 12px 20px;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .chat-input:focus {
+        background: #fff;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.05), 0 0 0 2px #0d6efd33;
+    }
+</style>
+
+<div class="container py-4">
+    <div class="row chat-layout g-0">
+        <!-- Sidebar -->
+        <div class="col-md-4 col-lg-3 chat-sidebar d-flex flex-column h-100">
+            <div class="p-4 pb-2">
+                <h5 class="fw-bold mb-3"><i class="bi bi-chat-dots-fill text-primary me-2"></i>聊天室</h5>
+                <div class="input-group mb-3">
+                    <span class="input-group-text bg-white border-end-0 rounded-start-pill ps-3"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" class="form-control border-start-0 rounded-end-pill" placeholder="搜尋好友...">
+                </div>
+            </div>
+            
+            <div class="flex-grow-1 overflow-auto px-3 pb-3">
+                <div class="list-group list-group-flush">
                     @foreach (var contact in contacts)
                     {
-                        <a href="/Chat/Index?with=@contact.Email" class="list-group-item list-group-item-action @(targetEmail == contact.Email ? "active" : "") d-flex align-items-center bg-transparent border-0 text-white">
-                            <img src="/images/default-user.png" class="rounded-circle me-3" width="40" height="40" />
-                            <div>
-                                <div class="fw-bold">@contact.Name</div>
-                                <small class="text-white-50">Click to chat</small>
+                        var isActive = targetEmail == contact.Email;
+                        <a href="/Chat/Index?with=@contact.Email" class="contact-item list-group-item d-flex align-items-center p-3 mb-2 text-decoration-none @(isActive ? "active" : "")">
+                            <div class="position-relative">
+                                <img src="@(contact.Photo ?? "/images/default-user.png")" class="rounded-circle object-fit-cover shadow-sm bg-white" width="50" height="50">
+                                <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle p-1"></span>
+                            </div>
+                            <div class="ms-3 flex-grow-1 overflow-hidden">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 fw-bold text-dark text-truncate">@contact.Name</h6>
+                                    <!-- <small class="text-muted" style="font-size:0.7rem">12:30</small> -->
+                                </div>
+                                <small class="text-muted text-truncate d-block">點擊開始聊天...</small>
                             </div>
                         </a>
                     }
@@ -29,45 +145,60 @@
         </div>
 
         <!-- Chat Area -->
-        <div class="col-md-8 h-100">
+        <div class="col-md-8 col-lg-9 chat-main d-flex flex-column h-100">
             @if (!string.IsNullOrEmpty(targetEmail))
             {
-                <div class="glass-card p-0 h-100 d-flex flex-column">
-                    <!-- Header -->
-                    <div class="p-3 border-bottom border-secondary bg-white bg-opacity-10">
-                        <h5 class="m-0">Talking with <strong>@targetName</strong></h5>
-                    </div>
-
-                    <!-- Messages -->
-                    <div id="messagesList" class="flex-grow-1 p-3 overflow-auto d-flex flex-column gap-2">
-                        @foreach (var msg in Model)
-                        {
-                            <div class="d-flex @(msg.SenderEmail == currentEmail ? "justify-content-end" : "justify-content-start")">
-                                <div class="p-2 px-3 rounded-4 params" 
-                                     style="max-width: 70%; background-color: @(msg.SenderEmail == currentEmail ? "#0d6efd" : "#495057");">
-                                    @msg.Content
-                                    <div class="text-end" style="font-size: 0.7em; opacity: 0.7;">@msg.SentAt.ToString("HH:mm")</div>
-                                </div>
-                            </div>
-                        }
-                    </div>
-
-                    <!-- Input -->
-                    <div class="p-3 border-top border-secondary bg-white bg-opacity-10">
-                        <div class="input-group">
-                            <input type="text" id="messageInput" class="form-control bg-dark text-white border-secondary" placeholder="Type a message..." autocomplete="off">
-                            <button class="btn btn-primary" id="sendButton">✈️ Send</button>
+                <!-- Header -->
+                <div class="chat-header d-flex align-items-center justify-content-between shadow-sm z-3">
+                    <div class="d-flex align-items-center">
+                        <img src="@targetPhoto" class="rounded-circle object-fit-cover shadow-sm bg-white" width="45" height="45">
+                        <div class="ms-3">
+                            <h6 class="mb-0 fw-bold">@targetName</h6>
+                            <small class="text-success"><i class="bi bi-circle-fill" style="font-size: 6px; vertical-align: middle;"></i> 線上</small>
                         </div>
                     </div>
+                    <div>
+                        <button class="btn btn-light btn-sm rounded-circle shadow-sm" title="語音通話 (Demo)"><i class="bi bi-telephone-fill text-muted"></i></button>
+                        <button class="btn btn-light btn-sm rounded-circle shadow-sm ms-2" title="視訊通話 (Demo)"><i class="bi bi-camera-video-fill text-muted"></i></button>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div id="messagesList" class="messages-area flex-grow-1 p-4 overflow-auto d-flex flex-column gap-3">
+                    @foreach (var msg in Model)
+                    {
+                        bool isMe = msg.SenderEmail == currentEmail;
+                        <div class="d-flex w-100 @(isMe ? "justify-content-end" : "justify-content-start")">
+                            @if(!isMe) {
+                                <img src="@targetPhoto" class="rounded-circle object-fit-cover me-2 align-self-end mb-1 shadow-sm" width="30" height="30">
+                            }
+                            <div class="bubble @(isMe ? "bubble-me" : "bubble-other")">
+                                @msg.Content
+                                <div class="bubble-time @(isMe ? "text-white-50" : "text-muted")">@msg.SentAt.ToString("HH:mm")</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Input -->
+                <div class="chat-input-area shadow-lg z-3">
+                    <form id="chatForm" class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-light text-muted rounded-circle" title="上傳圖片 (Demo)"><i class="bi bi-image"></i></button>
+                        <div class="input-group">
+                            <input type="text" id="messageInput" class="form-control rounded-pill bg-light border-0 px-4" placeholder="輸入訊息..." autocomplete="off">
+                            <button type="submit" class="btn btn-primary rounded-circle ms-2 shadow-sm d-flex align-items-center justify-content-center" id="sendButton" style="width: 40px; height: 40px;">
+                                <i class="bi bi-send-fill text-white small"></i>
+                            </button>
+                        </div>
+                    </form>
                 </div>
             }
             else
             {
-                <div class="glass-card h-100 d-flex align-items-center justify-content-center">
-                    <div class="text-center text-white-50">
-                        <h1>👈</h1>
-                        <p>請選擇一位聯絡人開始聊天</p>
-                    </div>
+                <div class="h-100 d-flex flex-column align-items-center justify-content-center bg-light bg-opacity-50">
+                    <img src="/images/presets/avatar-ai-robot.png" class="mb-4 rounded-circle shadow-lg" width="120" style="opacity: 0.8; filter: grayscale(50%);">
+                    <h3 class="fw-bold text-muted">歡迎回到 PetPet 聊天室</h3>
+                    <p class="text-muted">👈 請從左側選擇一位好友開始聊天</p>
                 </div>
             }
         </div>
@@ -85,22 +216,32 @@
         connection.on("ReceiveMessage", function (senderEmail, message) {
             const currentTarget = "@targetEmail";
             const myEmail = "@currentEmail";
+            // Ensure target photo is correctly rendered in JS string
+            const targetAvatar = "@Html.Raw(targetPhoto)"; 
 
             if (senderEmail === currentTarget || senderEmail === myEmail) {
                 const isMe = senderEmail === myEmail;
-                const alignment = isMe ? "justify-content-end" : "justify-content-start";
-                const bg = isMe ? "#0d6efd" : "#495057";
-                
                 const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-                const html = `
-                    <div class="d-flex ${alignment}">
-                        <div class="p-2 px-3 rounded-4 params" 
-                             style="max-width: 70%; background-color: ${bg};">
-                            ${message} // 
-                            <div class="text-end" style="font-size: 0.7em; opacity: 0.7;">${time}</div>
-                        </div>
-                    </div>`;
+                
+                let html = "";
+                if (isMe) {
+                    html = `
+                        <div class="d-flex w-100 justify-content-end mb-3">
+                            <div class="bubble bubble-me">
+                                ${message}
+                                <div class="bubble-time text-white-50">${time}</div>
+                            </div>
+                        </div>`;
+                } else {
+                    html = `
+                         <div class="d-flex w-100 justify-content-start mb-3">
+                             <img src="${targetAvatar}" class="rounded-circle object-fit-cover me-2 align-self-end mb-1 shadow-sm" width="30" height="30" onerror="this.src='/images/default-user.png'">
+                             <div class="bubble bubble-other">
+                                 ${message}
+                                 <div class="bubble-time text-muted">${time}</div>
+                             </div>
+                         </div>`;
+                }
                 
                 const list = document.getElementById("messagesList");
                 list.insertAdjacentHTML('beforeend', html);
@@ -109,42 +250,34 @@
         });
 
         connection.start().then(function () {
-            document.getElementById("sendButton").disabled = false;
+            const btn = document.getElementById("sendButton");
+            if(btn) btn.disabled = false;
         }).catch(function (err) {
             return console.error(err.toString());
         });
 
-        // Send Message
-        document.getElementById("sendButton")?.addEventListener("click", function (event) {
-            const message = document.getElementById("messageInput").value;
+        // Send Logic
+        function sendMessage() {
+            const input = document.getElementById("messageInput");
+            const message = input.value.trim();
             const targetEmail = "@targetEmail";
 
             if(message && targetEmail) {
-                // UI Optimistic Update
-                const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                 const html = `
-                    <div class="d-flex justify-content-end">
-                        <div class="p-2 px-3 rounded-4 params" 
-                             style="max-width: 70%; background-color: #0d6efd;">
-                            ${message}
-                            <div class="text-end" style="font-size: 0.7em; opacity: 0.7;">${time}</div>
-                        </div>
-                    </div>`;
-                 const list = document.getElementById("messagesList");
-                 list.insertAdjacentHTML('beforeend', html);
-                 list.scrollTop = list.scrollHeight;
-
-                 // Invoke Hub
                  connection.invoke("SendMessage", targetEmail, message).catch(function (err) {
                     return console.error(err.toString());
                 });
-                
-                document.getElementById("messageInput").value = "";
+                input.value = "";
+                input.focus();
             }
-            event.preventDefault();
+        }
+
+        // Form Submit
+        document.getElementById("chatForm")?.addEventListener("submit", function(e) {
+            e.preventDefault();
+            sendMessage();
         });
         
-        // Auto Scroll to bottom on load
+        // Auto Scroll
         window.onload = function() {
             const list = document.getElementById("messagesList");
             if(list) list.scrollTop = list.scrollHeight;

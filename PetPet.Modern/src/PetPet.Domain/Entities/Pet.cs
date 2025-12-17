@@ -11,4 +11,5 @@ public class Pet
 
     // Navigation
     public virtual Member Owner { get; set; } = null!;
+    public virtual PetVariety? Variety { get; set; }
 }

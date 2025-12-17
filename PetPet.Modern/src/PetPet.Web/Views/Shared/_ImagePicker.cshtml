@@ -48,8 +48,9 @@
         // Load Presets
         loadPresets();
         
-        // Show Modal
-        const modal = new bootstrap.Modal(document.getElementById('imagePickerModal'));
+        // Show Modal (Fix: Use getOrCreateInstance)
+        const el = document.getElementById('imagePickerModal');
+        const modal = bootstrap.Modal.getOrCreateInstance(el);
         modal.show();
     }
 
@@ -104,7 +105,7 @@
         
         // Close Modal
         const el = document.getElementById('imagePickerModal');
-        const modal = bootstrap.Modal.getInstance(el);
+        const modal = bootstrap.Modal.getOrCreateInstance(el);
         modal.hide();
     }
 </script>

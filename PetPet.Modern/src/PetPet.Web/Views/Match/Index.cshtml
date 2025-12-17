@@ -1,67 +1,256 @@
-@model List<PetPet.Infrastructure.Services.MatchResultDto>
 @{
-    ViewData["Title"] = "配對專區";
+    ViewData["Title"] = "緣分匹配";
 }
 
-<div class="container py-5">
-    <div class="text-center mb-5">
-        <h1 class="display-4 fw-bold text-white" style="text-shadow: 0 2px 4px rgba(0,0,0,0.2);">💘 緣分匹配</h1>
-        <p class="text-white-50">為您的毛小孩尋找最佳玩伴！</p>
+<style>
+    .tinder-container {
+        position: relative;
+        width: 100%;
+        max-width: 400px;
+        height: 600px;
+        margin: 0 auto;
+        perspective: 1000px;
+    }
+
+    .tinder-card {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        overflow: hidden;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+        transform-origin: 50% 100%;
+    }
+
+    .tinder-card img {
+        width: 100%;
+        height: 70%;
+        object-fit: cover;
+    }
+
+    .card-info {
+        padding: 20px;
+        height: 30%;
+        background: linear-gradient(to bottom, rgba(255,255,255,0.9), white);
+    }
+
+    .card-actions {
+        position: absolute;
+        bottom: 20px; /* Floating above info, or below */
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        z-index: 10;
+    }
+
+    .action-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        border: none;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        font-size: 24px;
+        transition: transform 0.2s;
+        cursor: pointer;
+    }
+    
+    .btn-pass { background: #fff; color: #ff4b4b; border: 2px solid #ff4b4b; }
+    .btn-like { background: #ff4b4b; color: #fff; }
+    
+    .action-btn:hover { transform: scale(1.1); }
+
+    /* Match Overlay */
+    #matchOverlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.85);
+        z-index: 9999;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        text-align: center;
+    }
+    
+    .match-avatars {
+        display: flex;
+        gap: 20px;
+        margin: 30px 0;
+    }
+    
+    .match-avatar {
+        width: 120px; height: 120px;
+        border-radius: 50%;
+        border: 4px solid white;
+        object-fit: cover;
+    }
+
+    .no-cards {
+        display: none;
+        text-align: center;
+        padding-top: 100px;
+        color: white;
+    }
+</style>
+
+<div class="container py-4">
+    <div id="stack" class="tinder-container">
+        <div class="no-cards" id="noCardsMsg">
+            <h3>📭 暫時沒有對象了</h3>
+            <p>請稍後再來看看吧！</p>
+        </div>
+        <!-- Cards will be injected here -->
     </div>
 
-    @if (!Model.Any())
-    {
-        <div class="glass-card text-center p-5">
-            <h3>😔 目前沒有適合的配對對象</h3>
-            <p>請稍後再來，或擴大您的搜尋範圍。</p>
-        </div>
-    }
-    else
-    {
-        <div class="row g-4">
-            @foreach (var match in Model)
-            {
-                <div class="col-md-6 col-lg-4">
-                    <div class="glass-card h-100 p-0 overflow-hidden position-relative">
-                        <!-- Match Score Badge -->
-                        <div class="position-absolute top-0 end-0 m-3 badge rounded-pill bg-danger fs-5 shadow">
-                            @match.Score% 速配
-                        </div>
+    <!-- Actions Bar (Fixed at bottom of container for better UX) -->
+    <div class="d-flex justify-content-center mt-4 gap-4">
+        <button class="action-btn btn-pass" onclick="handleSwipe(0)">❌</button>
+        <button class="action-btn btn-like" onclick="handleSwipe(1)">💖</button>
+    </div>
+</div>
 
-                        <!-- Photo -->
-                        <div class="ratio ratio-4x3">
-                             <img src="@(string.IsNullOrEmpty(match.TargetMember.Photo) ? "/images/default-user.png" : match.TargetMember.Photo)" 
-                                  class="object-fit-cover" alt="@match.TargetMember.Name">
-                        </div>
+<!-- Match Overlay -->
+<div id="matchOverlay">
+    <h1 class="display-1" style="font-family: 'Damion', cursive; color: #ff6b6b; text-shadow: 0 0 20px white;">It's a Match!</h1>
+    <h3 id="matchName" class="mt-3">You and Alice liked each other!</h3>
+    
+    <div class="match-avatars">
+        <img src="/images/default-user.png" class="match-avatar" id="myAvatar">
+        <img src="/images/default-user.png" class="match-avatar" id="theirAvatar">
+    </div>
 
-                        <div class="p-4 text-center">
-                            <h3 class="fw-bold">@match.TargetMember.Name</h3>
-                            
-                            @if (match.PrimaryPet != null)
-                            {
-                                <p class="text-muted mb-2">
-                                    <span class="badge bg-info text-dark">Variety: @match.PrimaryPet.VarietyId</span>
-                                    <span>@(match.TargetMember.CityId == 1 ? "台北" : "其他")</span>
-                                </p>
-                            }
+    <div class="d-grid gap-3 col-6 mx-auto">
+        <a href="#" id="chatLink" class="btn btn-light btn-lg rounded-pill fw-bold text-danger">💬 開始聊天</a>
+        <button class="btn btn-outline-light btn-lg rounded-pill" onclick="closeMatch()">繼續滑動</button>
+    </div>
+</div>
 
-                            <!-- Reasons -->
-                            <div class="mb-4">
-                                @foreach (var reason in match.MatchReasons)
-                                {
-                                    <span class="badge bg-success bg-opacity-75 me-1">@reason</span>
-                                }
-                            </div>
+@section Scripts {
+    <script>
+        let candidates = [];
+        let currentCardIndex = 0;
+        
+        // Load Candidates
+        async function loadCards() {
+            const res = await fetch('/Match/GetCandidates');
+            candidates = await res.json();
+            
+            if (candidates.length === 0) {
+                document.getElementById('noCardsMsg').style.display = 'block';
+                return;
+            }
+            
+            renderCards();
+        }
 
-                            <div class="d-grid gap-2">
-                                <a href="/Chat/Index?with=@match.TargetMember.Email" class="btn btn-primary rounded-pill">
-                                    💬 發起聊天
-                                </a>
-                            </div>
+        function renderCards() {
+            const stack = document.getElementById('stack');
+            // Render in reverse so the first one is on top (z-index logic needed or just appendOrder)
+            // Actually simpler: Render only Top 2 cards (Current and Next) to save DOM
+            // For MVP: Render all, hide others or stack them absolute
+            
+            stack.innerHTML = '<div class="no-cards" id="noCardsMsg"><h3>📭 暫時沒有對象了</h3><p>請稍後再來看看吧！</p></div>';
+            
+            // We iterate backwards to stack z-index correctly (first item last = on top)
+            // But simplify: Just absolute position. Last appended is on top.
+            // So we reverse the array for display loop
+            [...candidates].reverse().forEach((c, index) => {
+                const card = document.createElement('div');
+                card.className = 'tinder-card';
+                card.id = `card-${c.targetMember.email}`;
+                card.innerHTML = `
+                    <div class="position-absolute top-0 end-0 m-3 badge bg-danger fs-5 shadow" style="z-index:2">
+                        ${c.matchScore}% 緣分
+                    </div>
+                    <div class="position-absolute top-0 start-0 m-3 badge bg-dark bg-opacity-75 fs-6 shadow" style="z-index:2">
+                        🔮 ${c.ziweiName}
+                    </div>
+                    <img src="${c.targetMember.photo || '/images/default-user.png'}" alt="${c.targetMember.name}">
+                    <div class="card-info">
+                        <h3>${c.targetMember.name}, <small class="text-muted">${c.targetMember.cityId == 1 ? "台北" : "其他"}</small></h3>
+                        <p class="text-muted mb-1 small">${c.ziweiDesc}</p>
+                        <p class="text-muted mb-0">
+                            ${c.primaryPet ? `<i class="fas fa-paw"></i> ${c.primaryPet.name}` : ''}
+                        </p>
+                        <div class="mt-2 text-wrap">
+                            ${c.matchReasons.map(r => `<span class="badge bg-success bg-opacity-75 me-1">${r}</span>`).join('')}
                         </div>
                     </div>
-                </div>
+                `;
+                stack.appendChild(card);
+            });
+        }
+
+        async function handleSwipe(action) { // 0 = Pass, 1 = Like
+            if (candidates.length === 0) return;
+            
+            const current = candidates[0]; // Top card (first in array, last in DOM... wait logic above said last appended is top)
+            // Correct Logic:
+            // Array: [A, B, C]
+            // DOM Append: A, B, C (C is on top of B, B on top of A)
+            // So candidates[candidates.length - 1] is the visible one? 
+            // Let's align: Array [A, B, C]. We want A to be first. 
+            // InnerHTML clear. Append C, B, A. A is Last Child => Top.
+            // So Current is candidates[0].
+            
+            // Visual Animation
+            const cardEl = document.getElementById(`card-${current.targetMember.email}`);
+            if(!cardEl) return;
+
+            const transform = action === 1 ? 'translate(400px, 50px) rotate(30deg)' : 'translate(-400px, 50px) rotate(-30deg)';
+            cardEl.style.transform = transform;
+            cardEl.style.opacity = '0';
+
+            // Send to Server
+            const formData = new FormData();
+            formData.append('targetEmail', current.targetMember.email);
+            formData.append('action', action);
+            // Add CSRF Token
+            formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+            try {
+                const res = await fetch('/Match/Swipe', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await res.json();
+
+                if (result.isMatch) {
+                    showMatch(current);
+                }
+            } catch (err) {
+                console.error(err);
             }
-        </div>
-    }
-</div>
+
+            // Remove from Array & UI
+            candidates.shift(); // Remove A
+            setTimeout(() => cardEl.remove(), 300);
+            
+            if (candidates.length === 0) {
+                 document.getElementById('noCardsMsg').style.display = 'block';
+            }
+        }
+
+        function showMatch(target) {
+            document.getElementById('matchName').innerText = `You and ${target.targetMember.name} liked each other!`;
+            document.getElementById('theirAvatar').src = target.targetMember.photo || '/images/default-user.png';
+            document.getElementById('chatLink').href = `/Chat/Index?with=${target.targetMember.email}`;
+            
+            // Display overlay
+            const overlay = document.getElementById('matchOverlay');
+            overlay.style.display = 'flex';
+            overlay.classList.add('animate__animated', 'animate__zoomIn');
+        }
+
+        function closeMatch() {
+            document.getElementById('matchOverlay').style.display = 'none';
+        }
+
+        loadCards();
+    </script>
+    @Html.AntiForgeryToken()
+}

@@ -19,7 +19,15 @@ public class PostController : Controller
 
     // GET: Post (The Wall)
     [AllowAnonymous] // Allow guests to view
-    public async Task<IActionResult> Index()
+    public IActionResult Index()
+    {
+        return View();
+    }
+
+    // GET: Post/GetPosts API for AJAX Loading
+    [AllowAnonymous]
+    [HttpGet]
+    public async Task<IActionResult> GetPosts(int page = 1, int pageSize = 9)
     {
         var posts = await _context.Posts
             .Include(p => p.Author)
@@ -27,8 +35,30 @@ public class PostController : Controller
             .Include(p => p.Comments)
                 .ThenInclude(c => c.Author)
             .OrderByDescending(p => p.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(p => new 
+            {
+                p.Id,
+                p.Title,
+                p.Content,
+                p.CreatedAt,
+                p.ImageUrl,
+                Author = new { 
+                    p.Author.Name, 
+                    p.Author.Photo 
+                },
+                LikeCount = p.Likes.Count,
+                IsLiked = User.Identity.IsAuthenticated && p.Likes.Any(l => l.UserEmail == User.FindFirstValue(ClaimTypes.Email)), // Fix IsLiked logic
+                CommentCount = p.Comments.Count,
+                Comments = p.Comments.Select(c => new { 
+                    c.Content, 
+                    AuthorName = c.Author != null ? c.Author.Name : "會員" 
+                }).ToList()
+            })
             .ToListAsync();
-        return View(posts);
+
+        return Json(posts);
     }
 
     // GET: Post/Create
@@ -40,7 +70,7 @@ public class PostController : Controller
     // POST: Post/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("Title,Content")] Post post)
+    public async Task<IActionResult> Create([Bind("Title,Content,ImageUrl")] Post post)
     {
         if (ModelState.IsValid)
         {
@@ -96,7 +126,11 @@ public class PostController : Controller
         }
         
         await _context.SaveChangesAsync();
-        return RedirectToAction(nameof(Index));
+        
+        // Get new count
+        var newCount = await _context.Likes.CountAsync(l => l.PostId == id);
+        
+        return Json(new { success = true, isLiked = existingLike == null, count = newCount });
     }
 
     // POST: Post/AddComment

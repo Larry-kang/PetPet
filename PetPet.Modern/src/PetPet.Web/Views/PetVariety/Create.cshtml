@@ -1,0 +1,42 @@
+@model PetPet.Domain.Entities.PetVariety
+
+@{
+    ViewData["Title"] = "新增品種";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">新增寵物品種</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        
+                        <div class="mb-3">
+                            <label asp-for="PetTypeId" class="form-label">選擇類別</label>
+                            <select asp-for="PetTypeId" class ="form-select" asp-items="ViewBag.PetTypeId"></select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label">品種名稱</label>
+                            <input asp-for="Name" class="form-control" placeholder="例如：黃金獵犬、波斯貓..." />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Index" class="btn btn-secondary">返回列表</a>
+                            <button type="submit" class="btn btn-primary">確認新增</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -16,8 +16,11 @@ public class PetPetDbContext : DbContext
     public DbSet<Report> Reports => Set<Report>();
     public DbSet<Like> Likes { get; set; }
     public DbSet<Friend> Friends { get; set; }
+    public DbSet<MatchInteraction> MatchInteractions => Set<MatchInteraction>();
     public DbSet<Message> Messages { get; set; }
     public DbSet<Comment> Comments => Set<Comment>();
+    public DbSet<PetType> PetTypes => Set<PetType>();
+    public DbSet<PetVariety> PetVarieties => Set<PetVariety>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -57,6 +60,32 @@ public class PetPetDbContext : DbContext
             entity.Property(e => e.Name).HasColumnName("Pet_name").HasMaxLength(40).IsRequired();
             entity.Property(e => e.Gender).HasColumnName("Pet_gender");
             entity.Property(e => e.Photo).HasColumnName("Pet_photo").HasMaxLength(1000);
+
+            entity.HasOne(p => p.Variety)
+                  .WithMany()
+                  .HasForeignKey(p => p.VarietyId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // PetType Configuration
+        modelBuilder.Entity<PetType>(entity =>
+        {
+            entity.ToTable("PetType");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+        });
+
+        // PetVariety Configuration
+        modelBuilder.Entity<PetVariety>(entity =>
+        {
+            entity.ToTable("PetVariety");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+            
+            entity.HasOne(v => v.PetType)
+                  .WithMany(t => t.Varieties)
+                  .HasForeignKey(v => v.PetTypeId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Comment Relationship
@@ -100,6 +129,12 @@ public class PetPetDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(f => f.AddresseeEmail)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // MatchInteraction Configuration
+        modelBuilder.Entity<MatchInteraction>(entity =>
+        {
+            entity.HasKey(e => e.Id);
         });
 
         // Message Configuration

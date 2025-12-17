@@ -25,6 +25,27 @@ namespace PetPet.Web.Controllers
             return View();
         }
 
+        public async Task<IActionResult> Analysis()
+        {
+            // Distribution of Pet Varieties
+            var varietyDist = await _context.Pets
+                .GroupBy(p => p.Variety.Name)
+                .Select(g => new { Name = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            ViewBag.VarietyLabels = varietyDist.Select(d => d.Name).ToList();
+            ViewBag.VarietyData = varietyDist.Select(d => d.Count).ToList();
+
+            // City Distribution
+            var cityDist = await _context.Members
+                .GroupBy(m => m.CityId)
+                .Select(g => new { CityId = g.Key, Count = g.Count() })
+                .ToListAsync();
+             ViewBag.CityData = cityDist.Select(d => d.Count).ToList();
+
+            return View();
+        }
+
         public async Task<IActionResult> ManageUsers()
         {
             var users = await _context.Members.OrderBy(m => m.Email).ToListAsync();

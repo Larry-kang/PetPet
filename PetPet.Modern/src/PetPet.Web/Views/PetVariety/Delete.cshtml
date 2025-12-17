@@ -1,0 +1,35 @@
+@model PetPet.Domain.Entities.PetVariety
+
+@{
+    ViewData["Title"] = "刪除品種";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">⚠️ 確認刪除</h4>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-4">確定要刪除此品種嗎？</h5>
+                    <dl class="row">
+                        <dt class="col-sm-4 text-end">品種名稱</dt>
+                        <dd class="col-sm-8">@Html.DisplayFor(model => model.Name)</dd>
+                        
+                        <dt class="col-sm-4 text-end">所屬類別</dt>
+                        <dd class="col-sm-8">@Html.DisplayFor(model => model.PetType.Name)</dd>
+                    </dl>
+                    
+                    <form asp-action="Delete">
+                        <input type="hidden" asp-for="Id" />
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Index" class="btn btn-secondary">取消</a>
+                            <button type="submit" class="btn btn-danger">確認刪除</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

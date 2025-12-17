@@ -1,4 +1,3 @@
-@model IEnumerable<PetPet.Domain.Entities.Post>
 @{
     ViewData["Title"] = "寵物社群牆";
 }
@@ -15,108 +14,166 @@
     </div>
 </div>
 
-<div class="row">
-    @foreach (var item in Model)
-    {
-        <div class="col-md-8 mx-auto mb-4">
-            <div class="card glass-card h-100">
-                <div class="card-header bg-transparent border-bottom-0 pt-3 ps-4 d-flex align-items-center">
-                    <div class="rounded-circle bg-light d-flex justify-content-center align-items-center text-secondary fw-bold me-2 overflow-hidden" style="width: 40px; height: 40px;">
-                        @if (!string.IsNullOrEmpty(item.Author.Photo))
-                        {
-                            <img src="@item.Author.Photo" class="w-100 h-100 object-fit-cover">
-                        }
-                        else
-                        {
-                            @(item.Author.Name.Length > 0 ? item.Author.Name.Substring(0,1) : "?")
-                        }
-                    </div>
-                    <div>
-                        <h6 class="mb-0 fw-bold">@item.Author.Name</h6>
-                        <small class="text-muted">@item.CreatedAt.ToString("yyyy/MM/dd HH:mm")</small>
-                    </div>
-                    @if (User.Identity!.Name == item.Author.Name)
-                    {
-                        <div class="ms-auto">
-                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('確定要刪除這篇貼文嗎？');">
-                                <button type="submit" class="btn btn-sm btn-link text-danger p-0">刪除</button>
-                            </form>
-                        </div>
-                    }
-                </div>
-                <div class="card-body p-0">
-                    @if (!string.IsNullOrEmpty(item.ImageUrl))
-                    {
-                        <img src="@item.ImageUrl" class="w-100 object-fit-cover" style="max-height: 400px;" alt="@item.Title">
-                    }
-                    <div class="p-4">
-                        <h5 class="card-title fw-bold">@item.Title</h5>
-                        <p class="card-text text-dark" style="white-space: pre-line;">@item.Content</p>
-                    </div>
-                </div>
-                <div class="card-footer bg-transparent border-top-0 pb-3 ps-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="d-flex gap-2">
-                            @{
-                                var isLiked = item.Likes.Any(l => l.UserEmail == User.Identity!.Name);
-                                var likeCount = item.Likes.Count;
-                            }
-                            <form asp-action="Like" asp-route-id="@item.Id" method="post">
-                                <button type="submit" class="btn btn-sm rounded-pill @(isLiked ? "btn-danger" : "btn-outline-danger")">
-                                    @(isLiked ? "❤️" : "🤍") 喜歡 (@likeCount)
-                                </button>
-                            </form>
-                            
-                            <button class="btn btn-sm btn-outline-primary rounded-pill" type="button" data-bs-toggle="collapse" data-bs-target="#comments-@item.Id">
-                                💬 留言 (@item.Comments.Count)
-                            </button>
-                        </div>
-
-                        @if (User.Identity!.Name != item.Author.Name)
-                        {
-                            <a asp-controller="Report" asp-action="Create" asp-route-postId="@item.Id" class="text-muted small text-decoration-none">
-                                ⚠️ 檢舉
-                            </a>
-                        }
-                    </div>
-
-                    <!-- Comments Section -->
-                    <div class="collapse" id="comments-@item.Id">
-                        <div class="card card-body bg-light border-0 small p-3">
-                            <!-- Comment Form -->
-                            <form asp-action="AddComment" method="post" class="mb-3 d-flex gap-2">
-                                <input type="hidden" name="postId" value="@item.Id" />
-                                <input type="text" name="content" class="form-control form-control-sm rounded-pill" placeholder="寫些什麼..." required />
-                                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">送出</button>
-                            </form>
-
-                            <!-- Comment List -->
-                            @if (item.Comments.Any())
-                            {
-                                <div class="vstack gap-2">
-                                    @foreach(var comment in item.Comments.OrderBy(c => c.CreatedAt))
-                                    {
-                                        <div class="d-flex gap-2">
-                                            <div class="fw-bold">@(comment.Author?.Name ?? "會員")</div>
-                                            <div class="text-dark">@comment.Content</div>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
-
-    @if (!Model.Any())
-    {
-        <div class="col-12 text-center mt-5">
-            <div class="text-muted display-1 mb-3">📭</div>
-            <h3>目前還沒有貼文</h3>
-            <p>成為第一個分享的人吧！</p>
-            <a asp-action="Create" class="btn btn-primary mt-2">立即發文</a>
-        </div>
-    }
+<div id="posts-container" class="row g-4">
+    <!-- Posts will be loaded here via AJAX -->
 </div>
+
+<div class="row mt-5 mb-5">
+    <div class="col-12 text-center">
+        <div id="loader" class="spinner-border text-primary d-none" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p id="no-more-data" class="text-muted mt-3 d-none">已經到底囉！ 🏁</p>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let page = 1;
+        const pageSize = 9;
+        let isLoading = false;
+        const isUserAuthenticated = @(User.Identity.IsAuthenticated.ToString().ToLower());
+
+        function loadPosts() {
+            if (isLoading) return;
+            
+            // Guest Restriction: Only allow loading first page (9 posts)
+            if (!isUserAuthenticated && page > 1) {
+                showGuestRestriction();
+                return;
+            }
+
+            isLoading = true;
+            $('#btn-load-more').addClass('d-none');
+            $('#loader').removeClass('d-none');
+
+            $.get(`/Post/GetPosts?page=${page}&pageSize=${pageSize}`, function(data) {
+                if (data.length === 0) {
+                    $('#no-more-data').removeClass('d-none');
+                    $('#loader').addClass('d-none');
+                    return;
+                }
+
+                data.forEach(post => {
+                    const postHtml = `
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card glass-card h-100 shadow-sm border-0">
+                                <div class="card-header bg-transparent border-0 pt-3 ps-3 d-flex align-items-center">
+                                    <img src="${post.author.photo || '/images/default-avatar.png'}" class="rounded-circle me-2 object-fit-cover" width="40" height="40">
+                                    <div>
+                                        <div class="fw-bold small">${post.author.name}</div>
+                                        <div class="text-muted x-small" style="font-size:0.75rem">${new Date(post.createdAt).toLocaleDateString()}</div>
+                                    </div>
+                                </div>
+                                ${post.imageUrl ? `<img src="${post.imageUrl}" class="card-img-top object-fit-cover" style="height: 200px;" alt="Post Image">` : ''}
+                                <div class="card-body">
+                                    <h5 class="card-title fw-bold fs-6">${post.title}</h5>
+                                    <p class="card-text small text-secondary text-truncate-3">${post.content}</p>
+                                </div>
+                                <div class="card-footer bg-transparent border-0 d-flex justify-content-between align-items-center">
+                                    <button class="btn btn-sm ${post.isLiked ? 'btn-danger' : 'btn-outline-danger'} rounded-pill" onclick="toggleLike(${post.id})">
+                                        ${post.isLiked ? '❤️' : '🤍'} ${post.likeCount}
+                                    </button>
+                                    <small class="text-muted">💬 ${post.commentCount}</small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    $('#posts-container').append(postHtml);
+                });
+
+                // If guest, show restriction immediately after first load implies "Only 1 page allowed"
+                // But typically we want them to see 1 page, then try to scroll -> Block.
+                // Current logic allows page 1. Next trigger (scroll) will hit page 2 check above.
+
+                page++;
+                isLoading = false;
+                $('#loader').addClass('d-none');
+                $('#btn-load-more').removeClass('d-none');
+                
+                // If guest, maybe append a blurring overlay at the bottom as a teaser?
+                if (!isUserAuthenticated && page > 1) {
+                     showGuestRestriction();
+                }
+            });
+        }
+        
+        function showGuestRestriction() {
+            // Remove scroll listener
+             $(window).off('scroll');
+             $('#loader').addClass('d-none');
+             
+             if ($('#guest-overlay').length === 0) {
+                 const overlay = `
+                    <div id="guest-overlay" class="col-12 mt-4">
+                        <div class="glass-card p-5 text-center position-relative overflow-hidden">
+                             <div class="position-absolute top-0 start-0 w-100 h-100 bg-white" style="opacity:0.3; filter: blur(10px); z-index:0;"></div>
+                             <div class="position-relative" style="z-index:1;">
+                                <h2 class="fw-bold mb-3">🔒 登入以查看更多</h2>
+                                <p class="text-muted mb-4">加入 PetPet 社群，探索更多可愛毛孩的日常！</p>
+                                <a href="/Member/Login" class="btn btn-primary btn-lg rounded-pill px-5 shadow me-2">登入</a>
+                                <a href="/Member/Register" class="btn btn-outline-primary btn-lg rounded-pill px-5 shadow">註冊</a>
+                             </div>
+                        </div>
+                    </div>
+                 `;
+                 $('#posts-container').append(overlay);
+                 // Scroll slightly to show it
+                 $('html, body').animate({
+                    scrollTop: $("#guest-overlay").offset().top - 300
+                }, 1000);
+             }
+        }
+
+        // Initial Load
+        $(document).ready(function() {
+            loadPosts();
+
+            // Infinite Scroll Logic
+            $(window).scroll(function() {
+                if($(window).scrollTop() + $(window).height() > $(document).height() - 100) {
+                    loadPosts();
+                }
+            });
+            
+            // Add Create Post Button Float
+            if(isUserAuthenticated) {
+                // Remove any previous button
+                $('#fab-create-post').remove();
+                $('body').append(`
+                    <a href="/Post/Create" id="fab-create-post" class="btn btn-primary rounded-circle shadow-lg d-flex align-items-center justify-content-center position-fixed" style="width: 60px; height: 60px; bottom: 30px; right: 30px; z-index: 1000; font-size: 24px;">
+                        ➕
+                    </a>
+                `);
+            }
+        });
+
+        function toggleLike(id) {
+            if(!isUserAuthenticated) {
+                window.location.href = "/Member/Login";
+                return;
+            }
+            
+            $.post(`/Post/Like/${id}`, { __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() }, function(res) {
+               if(res.success) {
+                   // Find the button and update it
+                   // Since we don't have unique ID for button (bad practice in loop above), let's just reload or use target. But for now reloading is disruptive.
+                   // Ideally we set ID on button like `btn-like-${id}`.
+                   // Let's assume user accepts a simple success alert or re-render.
+                   // Proper way:
+                   const btn = $(`button[onclick="toggleLike(${id})"]`);
+                   btn.html(`${res.isLiked ? '❤️' : '🤍'} ${res.count}`);
+                   btn.toggleClass('btn-danger btn-outline-danger');
+               }
+            });
+        }
+    </script>
+    <style>
+        .text-truncate-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+}

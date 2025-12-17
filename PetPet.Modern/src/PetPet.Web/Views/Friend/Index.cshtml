@@ -1,0 +1,71 @@
+@model IEnumerable<PetPet.Domain.Entities.Friend>
+@using System.Security.Claims
+
+@{
+    ViewData["Title"] = "我的好友";
+    var currentEmail = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>🤝 我的好友清單</h2>
+        <a asp-controller="Match" asp-action="Index" class="btn btn-primary">💝 尋找新朋友</a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5">
+            <h4 class="text-muted">還沒有好友喔！趕快去配對吧！</h4>
+            <a asp-controller="Match" asp-action="Index" class="btn btn-outline-primary mt-3">前往配對</a>
+        </div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            @foreach (var friend in Model)
+            {
+                var isRequester = friend.RequesterEmail == currentEmail;
+                var buddy = isRequester ? friend.Addressee : friend.Requester;
+                var photoPath = !string.IsNullOrEmpty(buddy.Photo) ? buddy.Photo : "/images/presets/default.png";
+
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body text-center">
+                            <img src="@photoPath" class="rounded-circle mb-3" width="100" height="100" style="object-fit: cover;" alt="@buddy.Name" />
+                            <h5 class="card-title">@buddy.Name</h5>
+                            <p class="card-text text-muted">📍 @(buddy.CityId)</p>
+                            
+                            <div class="d-grid gap-2">
+                                <a asp-controller="Chat" asp-action="Index" asp-route-with="@buddy.Email" class="btn btn-info text-white">💬 傳送訊息</a>
+                                <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal-@friend.Id">
+                                    💔 解除好友
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delete Modal -->
+                <div class="modal fade" id="deleteModal-@friend.Id" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">確認解除好友</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                確定要刪除與 <strong>@buddy.Name</strong> 的好友關係嗎？
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <form asp-action="Delete" asp-route-id="@friend.Id" method="post">
+                                    <button type="submit" class="btn btn-danger">確認刪除</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
