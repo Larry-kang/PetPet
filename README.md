@@ -32,16 +32,16 @@
 
 ```mermaid
 graph TD
-    User[用戶 User] -->|HTTP/SignalR| Web[PetPet.Web (.NET 8)]
-    Web -->|Read/Write| DB[(SQL Server)]
+    User["用戶 (User)"] -->|HTTP/SignalR| Web["PetPet.Web (.NET 8)"]
+    Web -->|Read/Write| DB[("SQL Server")]
     
     subgraph "Legacy Refactoring"
-        Old[.NET 4.7 MVC] -.->|Replaced by| Web
+        Old[".NET 4.7 MVC"] -.->|Replaced by| Web
     end
 
     subgraph "Event-Driven Layer"
-        Web -->|Publish MatchSuccess| MQ[RabbitMQ]
-        MQ -->|Consume| Worker[NotificationConsumer]
+        Web -->|Publish MatchSuccess| MQ["RabbitMQ"]
+        MQ -->|Consume| Worker["NotificationConsumer"]
         Worker -->|Write System Msg| DB
     end
 
