@@ -41,6 +41,10 @@ pwsh -File ./start-demo.ps1 -Port 5215 -NoBrowser
 
 基準測試使用 TestServer 並在自己的測試主機重設配額，只供回歸；不能當成受完整限頻約束的真實瀏覽器性能量測。
 
+後續 CI 顯示 SQLite 併發測試偶發鎖定。唯讀查核實際 Demo 為 WAL，而測試 fixture 預先開啟空檔，略過 EF 建庫時的 WAL 設定，實際為 DELETE。新增 journal-mode 回歸斷言先重現 `Expected wal / Actual delete`，再將 fixture 設為 WAL；保留原本雙獨立連線、Barrier 與封鎖/傳訊結果斷言，沒有停用平行測試或放寬失敗條件。
+
+加入回歸斷言後，本機完整 Release 測試為 73 passed、0 failed、0 skipped（48 秒）。這次調整只涉及測試 fixture 與回歸斷言，未再變更產品程式；最終產品來源亦已於提交 `325adce` 由遠端全新 clone 驗證首次啟動 18,671 ms、五項 HTTP 200 與完整 seed 數量。
+
 ## 保留的限制
 
 這是本機展示交付，沒有新增外部郵件、帳號刪除匿名化、正式金鑰/多執行個體設定或 SQL Server 實體遷移與備援驗證。聊天聯絡人列表仍有每聯絡人查詢的效能改善空間，記憶體限頻也不適用多執行個體；不阻擋固定規模本機展示，不代表正式營運準備完成。

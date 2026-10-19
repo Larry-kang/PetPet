@@ -31,6 +31,13 @@ public class RemediationVerificationIntegrationTests : IDisposable
         _dbPath = Path.Combine(Path.GetTempPath(), $"petpet_remed_{Guid.NewGuid():N}.db");
         _sqliteConnection = new SqliteConnection($"Data Source={_dbPath}");
         _sqliteConnection.Open();
+        // Opening the empty file here bypasses EF's database creation/WAL setup.
+        // Match the migrated Demo so real readers and writers can run concurrently.
+        using (var command = _sqliteConnection.CreateCommand())
+        {
+            command.CommandText = "PRAGMA journal_mode=WAL;";
+            command.ExecuteScalar();
+        }
 
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
@@ -49,6 +56,14 @@ public class RemediationVerificationIntegrationTests : IDisposable
         var db = scope.ServiceProvider.GetRequiredService<PetPetDbContext>();
         db.Database.EnsureCreated();
         SeedRemediationData(db, scope.ServiceProvider.GetRequiredService<IMemberPasswordHasher>());
+    }
+
+    [Fact]
+    public void Sqlite_ConcurrencyFixture_UsesWalLikeTheDemoDatabase()
+    {
+        using var command = _sqliteConnection.CreateCommand();
+        command.CommandText = "PRAGMA journal_mode;";
+        Assert.Equal("wal", command.ExecuteScalar()?.ToString());
     }
 
     private void SeedRemediationData(PetPetDbContext db, IMemberPasswordHasher hasher)
