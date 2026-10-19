@@ -1417,7 +1417,6 @@ public class RemediationVerificationIntegrationTests : IDisposable
 
         var rateLimiter = _factory.Services.GetRequiredService<IChatRateLimiter>();
         rateLimiter.Reset();
-        ChatHub.ResetRateLimits();
         string? hubRateLimitError = null;
         aliceHub.On<object>("MessageFailed", err =>
         {

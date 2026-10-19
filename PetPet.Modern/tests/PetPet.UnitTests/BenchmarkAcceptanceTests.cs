@@ -208,7 +208,8 @@ public class BenchmarkAcceptanceTests : IDisposable
             // Timed 100 messages
             for (int i = 0; i < 100; i++)
             {
-                if (i % 50 == 0) PetPet.Web.Hubs.ChatHub.ResetRateLimits();
+                // Reset only this benchmark host; parallel hosts keep their quotas.
+                if (i % 50 == 0) factory.Services.GetRequiredService<PetPet.Application.Chat.IChatRateLimiter>().Reset();
                 var ackTcs = new TaskCompletionSource<bool>();
                 var reg = hubConn.On<object>("MessageAck", _ => ackTcs.TrySetResult(true));
 

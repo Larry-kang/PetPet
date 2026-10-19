@@ -12,14 +12,12 @@ public class ChatHub : Hub
     private readonly IChatService _chatService;
     private readonly PetPetDbContext _db;
     private readonly IChatRateLimiter _chatRateLimiter;
-    private static IChatRateLimiter? _staticRateLimiter;
 
     public ChatHub(IChatService chatService, PetPetDbContext db, IChatRateLimiter chatRateLimiter)
     {
         _chatService = chatService;
         _db = db;
         _chatRateLimiter = chatRateLimiter;
-        _staticRateLimiter = chatRateLimiter;
     }
 
     public override async Task OnConnectedAsync()
@@ -70,8 +68,6 @@ public class ChatHub : Hub
 
         await base.OnConnectedAsync();
     }
-
-    public static void ResetRateLimits() => _staticRateLimiter?.Reset();
 
     public async Task SendMessage(Guid targetPublicId, Guid clientMessageId, string content)
     {
