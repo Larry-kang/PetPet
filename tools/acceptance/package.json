@@ -1,0 +1,12 @@
+{
+  "name": "petpet-acceptance",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "PetPet.Modern Playwright acceptance and performance benchmark runner",
+  "scripts": {
+    "test": "node run-acceptance.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.40.0"
+  }
+}

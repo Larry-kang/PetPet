@@ -1,0 +1,235 @@
+@model PetPet.Application.Social.FriendListViewModel
+@{
+    ViewData["Title"] = "好友管理";
+}
+
+<div class="container my-4">
+    <div class="row align-items-center mb-4">
+        <div class="col-md-7">
+            <h1 class="display-6 fw-bold">👥 好友管理</h1>
+            <p class="text-muted mb-0">管理您的寵友關係，只有成為好友的會員才能互相傳送即時私訊</p>
+        </div>
+        <div class="col-md-5 text-md-end mt-3 mt-md-0">
+            <form asp-action="SendRequest" method="post" class="d-inline-flex gap-2">
+                <input type="email" name="targetEmail" class="form-control rounded-pill" placeholder="輸入好友 Email" required />
+                <button type="submit" class="btn btn-primary rounded-pill px-4 text-nowrap">送出邀請</button>
+            </form>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-pills mb-4 gap-2" id="friendTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a class="nav-link rounded-pill @(Model.ActiveTab == "accepted" ? "active" : "")" href="?tab=accepted">
+                已成為好友 <span class="badge bg-light text-dark ms-1">@Model.AcceptedFriends.Count</span>
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link rounded-pill @(Model.ActiveTab == "received" ? "active" : "")" href="?tab=received">
+                收到的邀請 <span class="badge bg-warning text-dark ms-1">@Model.ReceivedRequests.Count</span>
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link rounded-pill @(Model.ActiveTab == "sent" ? "active" : "")" href="?tab=sent">
+                發出的邀請 <span class="badge bg-secondary ms-1">@Model.SentRequests.Count</span>
+            </a>
+        </li>
+    </ul>
+
+    <!-- Tab 1: Accepted Friends -->
+    @if (Model.ActiveTab == "accepted")
+    {
+        @if (!Model.AcceptedFriends.Any())
+        {
+            <div class="card border-0 shadow-sm rounded-3 p-5 text-center">
+                <div class="text-muted display-1 mb-3">🤝</div>
+                <h4>目前還沒有任何好友</h4>
+                <p class="text-muted">快前往「玩伴推薦」或「社群動態」認識更多毛孩家長吧！</p>
+                <div class="mt-2">
+                    <a asp-controller="Match" asp-action="Index" class="btn btn-primary rounded-pill px-4">探索玩伴推薦</a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row g-3">
+                @foreach (var friend in Model.AcceptedFriends)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card border-0 shadow-sm rounded-3 h-100 p-3">
+                            <div class="d-flex align-items-center mb-3">
+                                <a href="/Members/@friend.MemberPublicId" class="text-decoration-none me-3">
+                                    <div class="rounded-circle bg-light border d-flex justify-content-center align-items-center overflow-hidden" style="width: 56px; height: 56px;">
+                                        @if (!string.IsNullOrEmpty(friend.MemberPhoto))
+                                        {
+                                            <img src="@friend.MemberPhoto" class="w-100 h-100 object-fit-cover" alt="@friend.MemberName">
+                                        }
+                                        else
+                                        {
+                                            <span class="fs-4 text-secondary">@(friend.MemberName.Length > 0 ? friend.MemberName.Substring(0, 1) : "?")</span>
+                                        }
+                                    </div>
+                                </a>
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <a href="/Members/@friend.MemberPublicId" class="text-decoration-none text-dark">
+                                        <h6 class="fw-bold mb-0 text-truncate">@friend.MemberName</h6>
+                                    </a>
+                                    <small class="text-muted text-truncate d-block">@friend.MemberEmail</small>
+                                    @if (friend.AcceptedAtUtc.HasValue)
+                                    {
+                                        <small class="text-muted" style="font-size: 0.75rem;">成為好友：@friend.AcceptedAtUtc.Value.ToLocalTime().ToString("yyyy/MM/dd")</small>
+                                    }
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(friend.Bio))
+                            {
+                                <p class="text-secondary small mb-3 text-truncate">@friend.Bio</p>
+                            }
+
+                            <div class="mt-auto d-flex gap-2">
+                                <a href="/Chat/Index?with=@friend.MemberEmail" class="btn btn-sm btn-primary rounded-pill flex-grow-1">
+                                    💬 傳訊息
+                                </a>
+                                <form asp-action="Remove" method="post" onsubmit="return confirm('確定要解除與 @friend.MemberName 的好友關係嗎？');" class="d-inline">
+                                    <input type="hidden" name="id" value="@friend.Id" />
+                                    <input type="hidden" name="version" value="@friend.Version" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill">解除好友</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+
+    <!-- Tab 2: Received Requests -->
+    @if (Model.ActiveTab == "received")
+    {
+        @if (!Model.ReceivedRequests.Any())
+        {
+            <div class="card border-0 shadow-sm rounded-3 p-5 text-center">
+                <div class="text-muted display-1 mb-3">📬</div>
+                <h4>目前沒有等待確認的好友邀請</h4>
+                <p class="text-muted">當有其他毛家長向您送出邀請時，會顯示在此處。</p>
+            </div>
+        }
+        else
+        {
+            <div class="row g-3">
+                @foreach (var request in Model.ReceivedRequests)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card border-0 shadow-sm rounded-3 h-100 p-3">
+                            <div class="d-flex align-items-center mb-3">
+                                <a href="/Members/@request.MemberPublicId" class="text-decoration-none me-3">
+                                    <div class="rounded-circle bg-light border d-flex justify-content-center align-items-center overflow-hidden" style="width: 56px; height: 56px;">
+                                        @if (!string.IsNullOrEmpty(request.MemberPhoto))
+                                        {
+                                            <img src="@request.MemberPhoto" class="w-100 h-100 object-fit-cover" alt="@request.MemberName">
+                                        }
+                                        else
+                                        {
+                                            <span class="fs-4 text-secondary">@(request.MemberName.Length > 0 ? request.MemberName.Substring(0, 1) : "?")</span>
+                                        }
+                                    </div>
+                                </a>
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <a href="/Members/@request.MemberPublicId" class="text-decoration-none text-dark">
+                                        <h6 class="fw-bold mb-0 text-truncate">@request.MemberName</h6>
+                                    </a>
+                                    <small class="text-muted text-truncate d-block">@request.MemberEmail</small>
+                                    <small class="text-muted" style="font-size: 0.75rem;">邀請時間：@request.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</small>
+                                </div>
+                            </div>
+
+                            <div class="mt-auto d-flex gap-2">
+                                <form asp-action="Accept" method="post" class="flex-grow-1">
+                                    <input type="hidden" name="id" value="@request.Id" />
+                                    <input type="hidden" name="version" value="@request.Version" />
+                                    <button type="submit" class="btn btn-sm btn-success rounded-pill w-100">接受邀請</button>
+                                </form>
+                                <form asp-action="Reject" method="post" class="flex-grow-1">
+                                    <input type="hidden" name="id" value="@request.Id" />
+                                    <input type="hidden" name="version" value="@request.Version" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill w-100">婉拒</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+
+    <!-- Tab 3: Sent Requests -->
+    @if (Model.ActiveTab == "sent")
+    {
+        @if (!Model.SentRequests.Any())
+        {
+            <div class="card border-0 shadow-sm rounded-3 p-5 text-center">
+                <div class="text-muted display-1 mb-3">📤</div>
+                <h4>目前沒有等待對方回應的邀請</h4>
+                <p class="text-muted">若您向其他會員發送邀請，對方尚未回應前將顯示在此處。</p>
+            </div>
+        }
+        else
+        {
+            <div class="row g-3">
+                @foreach (var request in Model.SentRequests)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card border-0 shadow-sm rounded-3 h-100 p-3">
+                            <div class="d-flex align-items-center mb-3">
+                                <a href="/Members/@request.MemberPublicId" class="text-decoration-none me-3">
+                                    <div class="rounded-circle bg-light border d-flex justify-content-center align-items-center overflow-hidden" style="width: 56px; height: 56px;">
+                                        @if (!string.IsNullOrEmpty(request.MemberPhoto))
+                                        {
+                                            <img src="@request.MemberPhoto" class="w-100 h-100 object-fit-cover" alt="@request.MemberName">
+                                        }
+                                        else
+                                        {
+                                            <span class="fs-4 text-secondary">@(request.MemberName.Length > 0 ? request.MemberName.Substring(0, 1) : "?")</span>
+                                        }
+                                    </div>
+                                </a>
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <a href="/Members/@request.MemberPublicId" class="text-decoration-none text-dark">
+                                        <h6 class="fw-bold mb-0 text-truncate">@request.MemberName</h6>
+                                    </a>
+                                    <small class="text-muted text-truncate d-block">@request.MemberEmail</small>
+                                    <small class="text-muted" style="font-size: 0.75rem;">送出時間：@request.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</small>
+                                </div>
+                            </div>
+
+                            <div class="mt-auto d-flex justify-content-between align-items-center">
+                                <span class="badge bg-secondary-subtle text-secondary">等待對方回應</span>
+                                <form asp-action="Cancel" method="post" onsubmit="return confirm('確定要取消這則好友邀請嗎？');">
+                                    <input type="hidden" name="id" value="@request.Id" />
+                                    <input type="hidden" name="version" value="@request.Version" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill">取消邀請</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>

@@ -44,10 +44,10 @@
     function openImagePicker(inputId, previewId) {
         targetInputId = inputId;
         targetPreviewId = previewId;
-        
+
         // Load Presets
         loadPresets();
-        
+
         // Show Modal
         const modal = new bootstrap.Modal(document.getElementById('imagePickerModal'));
         modal.show();
@@ -78,30 +78,38 @@
 
         const formData = new FormData();
         formData.append('file', input.files[0]);
+        const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        if (csrfToken) {
+            formData.append('__RequestVerificationToken', csrfToken);
+        }
 
-        document.getElementById('uploadStatus').innerText = 'Uploading...';
+        document.getElementById('uploadStatus').innerText = '正在上傳中...';
 
         fetch('/Image/Upload', {
             method: 'POST',
+            headers: csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {},
             body: formData
         })
-        .then(res => {
-            if(!res.ok) throw new Error('Upload failed');
+        .then(async res => {
+            if(!res.ok) {
+                const text = await res.text();
+                throw new Error(text || '上傳失敗');
+            }
             return res.json();
         })
         .then(data => {
             selectImage(data.url);
-            document.getElementById('uploadStatus').innerText = 'Success!';
+            document.getElementById('uploadStatus').innerText = '上傳成功！';
         })
         .catch(err => {
-            document.getElementById('uploadStatus').innerText = 'Error: ' + err.message;
+            document.getElementById('uploadStatus').innerText = '錯誤: ' + err.message;
         });
     }
 
     function selectImage(url) {
         if (targetInputId) document.getElementById(targetInputId).value = url;
         if (targetPreviewId) document.getElementById(targetPreviewId).src = url;
-        
+
         // Close Modal
         const el = document.getElementById('imagePickerModal');
         const modal = bootstrap.Modal.getInstance(el);

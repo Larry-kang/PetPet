@@ -6,16 +6,21 @@ namespace PetPet.Domain.Entities;
 public class Member
 {
     public string Email { get; set; } = null!;
-    public string Password { get; set; } = null!; // Pwd
+    public string NormalizedEmail { get; set; } = string.Empty;
+    public Guid PublicId { get; set; } = Guid.NewGuid();
+    public string Password { get; set; } = null!;
     public string Name { get; set; } = null!;
-    public DateTime Birthday { get; set; }
-    public bool Gender { get; set; }
-    public string Phone { get; set; } = null!;
-    public int CityId { get; set; } // City_no
-    public string? Photo { get; set; } // Mem_photo
-    public bool IsEnabled { get; set; } // Enable
-    public bool IsMatchEnabled { get; set; } // Match_Enable
-    public bool IsAdmin { get; set; } // Admin Role
+    public DateTime? Birthday { get; set; }
+    public bool? Gender { get; set; }
+    public string? Phone { get; set; }
+    public int? CityId { get; set; }
+    public string? Bio { get; set; }
+    public string? Photo { get; set; }
+    public bool IsEnabled { get; set; } = true;
+    public bool IsMatchEnabled { get; set; }
+    public bool IsAdmin { get; set; }
+    public string SecurityStamp { get; set; } = Guid.NewGuid().ToString("N");
+    public Guid Version { get; set; } = Guid.NewGuid();
 
     // Navigation
     public virtual ICollection<Pet> Pets { get; set; } = new List<Pet>();

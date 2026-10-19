@@ -1,67 +1,171 @@
-@model List<PetPet.Infrastructure.Services.MatchResultDto>
+@model PetPet.Infrastructure.Services.MatchIndexViewModel
+@using PetPet.Infrastructure.Services
 @{
-    ViewData["Title"] = "配對專區";
+    ViewData["Title"] = "玩伴推薦";
 }
 
-<div class="container py-5">
-    <div class="text-center mb-5">
-        <h1 class="display-4 fw-bold text-white" style="text-shadow: 0 2px 4px rgba(0,0,0,0.2);">💘 緣分匹配</h1>
-        <p class="text-white-50">為您的毛小孩尋找最佳玩伴！</p>
+<div class="container my-4">
+    <div class="row align-items-center mb-4">
+        <div class="col-md-8">
+            <h1 class="display-6 fw-bold">🐾 玩伴推薦</h1>
+            <p class="text-muted mb-0">依據同縣市生活圈、寵物品種默契與探索因子，為毛孩尋找志同道合的好玩伴</p>
+        </div>
+        <div class="col-md-4 text-md-end mt-2 mt-md-0">
+            <a asp-controller="Friend" asp-action="Index" class="btn btn-outline-primary rounded-pill px-3">
+                👥 我的好友名單
+            </a>
+        </div>
     </div>
 
-    @if (!Model.Any())
+    @if (TempData["SuccessMessage"] != null)
     {
-        <div class="glass-card text-center p-5">
-            <h3>😔 目前沒有適合的配對對象</h3>
-            <p>請稍後再來，或擴大您的搜尋範圍。</p>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
-    else
+    @if (TempData["ErrorMessage"] != null)
     {
-        <div class="row g-4">
-            @foreach (var match in Model)
-            {
-                <div class="col-md-6 col-lg-4">
-                    <div class="glass-card h-100 p-0 overflow-hidden position-relative">
-                        <!-- Match Score Badge -->
-                        <div class="position-absolute top-0 end-0 m-3 badge rounded-pill bg-danger fs-5 shadow">
-                            @match.Score% 速配
-                        </div>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
 
-                        <!-- Photo -->
-                        <div class="ratio ratio-4x3">
-                             <img src="@(string.IsNullOrEmpty(match.TargetMember.Photo) ? "/images/default-user.png" : match.TargetMember.Photo)" 
-                                  class="object-fit-cover" alt="@match.TargetMember.Name">
-                        </div>
+    @if (!Model.IsCurrentUserMatchEnabled)
+    {
+        <div class="alert alert-warning border-0 shadow-sm rounded-3 p-4 mb-4">
+            <div class="d-flex align-items-center">
+                <div class="display-6 me-3">🔒</div>
+                <div>
+                    <h5 class="alert-heading fw-bold">您目前已關閉玩伴推薦功能</h5>
+                    <p class="mb-2">開啟推薦功能後，系統將為您推薦附近的毛孩夥伴，同時也讓其他飼主能發現您的毛孩。</p>
+                    <a href="/Account/Profile" class="btn btn-sm btn-warning rounded-pill px-3 fw-bold">前往個人設定開啟推薦</a>
+                </div>
+            </div>
+        </div>
+    }
 
-                        <div class="p-4 text-center">
-                            <h3 class="fw-bold">@match.TargetMember.Name</h3>
-                            
-                            @if (match.PrimaryPet != null)
-                            {
-                                <p class="text-muted mb-2">
-                                    <span class="badge bg-info text-dark">Variety: @match.PrimaryPet.VarietyId</span>
-                                    <span>@(match.TargetMember.CityId == 1 ? "台北" : "其他")</span>
-                                </p>
-                            }
+    @if (!Model.CurrentUserHasPets)
+    {
+        <div class="alert alert-info border-0 shadow-sm rounded-3 p-4 mb-4">
+            <div class="d-flex align-items-center">
+                <div class="display-6 me-3">🐶</div>
+                <div>
+                    <h5 class="alert-heading fw-bold">您尚未登記任何毛孩</h5>
+                    <p class="mb-2">登記寵物檔案後，我們能比對寵物品種與年齡，為您推薦更契合的散步與玩耍夥伴！</p>
+                    <a asp-controller="Pet" asp-action="Create" class="btn btn-sm btn-info rounded-pill px-3 text-white fw-bold">立即登記第一隻寵物</a>
+                </div>
+            </div>
+        </div>
+    }
 
-                            <!-- Reasons -->
-                            <div class="mb-4">
-                                @foreach (var reason in match.MatchReasons)
+    @if (Model.IsCurrentUserMatchEnabled && Model.CurrentUserHasPets)
+    {
+        @if (!Model.Candidates.Any())
+        {
+            <div class="text-center py-5">
+                <div class="text-muted display-1 mb-3">🔍</div>
+                <h4>目前暫無更多符合條件的推薦對象</h4>
+                <p class="text-muted">請稍後再回來查看，或邀請更多毛孩爸媽加入 PetPet！</p>
+            </div>
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (var candidate in Model.Candidates)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 shadow-sm border-0 rounded-3 overflow-hidden position-relative">
+                            <!-- Explainable Recommendation Score Badge -->
+                            <div class="position-absolute top-0 end-0 m-3 badge rounded-pill bg-primary fs-6 shadow-sm">
+                                推薦分數: @candidate.Score 分
+                            </div>
+
+                            <div class="text-center pt-4 pb-2 bg-light">
+                                <a href="/Members/@candidate.MemberPublicId" class="text-decoration-none">
+                                    <div class="rounded-circle mx-auto bg-white border d-flex justify-content-center align-items-center overflow-hidden shadow-sm" style="width: 88px; height: 88px;">
+                                        @if (!string.IsNullOrEmpty(candidate.MemberPhoto))
+                                        {
+                                            <img src="@candidate.MemberPhoto" class="w-100 h-100 object-fit-cover" alt="@candidate.MemberName">
+                                        }
+                                        else
+                                        {
+                                            <span class="fs-2 text-secondary">@(candidate.MemberName.Length > 0 ? candidate.MemberName.Substring(0, 1) : "?")</span>
+                                        }
+                                    </div>
+                                    <h5 class="fw-bold mt-2 mb-1 text-dark">@candidate.MemberName</h5>
+                                </a>
+                                @if (!string.IsNullOrEmpty(candidate.CityName))
                                 {
-                                    <span class="badge bg-success bg-opacity-75 me-1">@reason</span>
+                                    <span class="badge bg-secondary-subtle text-secondary border">📍 @candidate.CityName</span>
                                 }
                             </div>
 
-                            <div class="d-grid gap-2">
-                                <a href="/Chat/Index?with=@match.TargetMember.Email" class="btn btn-primary rounded-pill">
-                                    💬 發起聊天
-                                </a>
+                            <div class="card-body p-3 text-center">
+                                @if (!string.IsNullOrEmpty(candidate.PrimaryPetName))
+                                {
+                                    <div class="p-2 mb-3 rounded-2 bg-light border small text-start d-flex align-items-center">
+                                        <div class="me-2 rounded-circle overflow-hidden bg-white border d-flex justify-content-center align-items-center" style="width: 38px; height: 38px;">
+                                            @if (!string.IsNullOrEmpty(candidate.PrimaryPetPhoto))
+                                            {
+                                                <img src="@candidate.PrimaryPetPhoto" class="w-100 h-100 object-fit-cover" alt="@candidate.PrimaryPetName">
+                                            }
+                                            else
+                                            {
+                                                <span>🐾</span>
+                                            }
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">@candidate.PrimaryPetName</div>
+                                            <div class="text-muted small">@(candidate.PrimaryPetVarietyName ?? "毛孩")</div>
+                                        </div>
+                                    </div>
+                                }
+
+                                <!-- Transparent Reasons -->
+                                <div class="mb-3 d-flex flex-wrap gap-1 justify-content-center">
+                                    @foreach (var reason in candidate.MatchReasons)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">@reason</span>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="card-footer bg-white border-top-0 p-3 pt-0">
+                                @if (candidate.FriendshipStatus == FriendshipStatus.Accepted)
+                                {
+                                    <a href="/Chat/Index?with=@candidate.MemberEmail" class="btn btn-primary w-100 rounded-pill">
+                                        💬 發送訊息
+                                    </a>
+                                }
+                                else if (candidate.FriendshipStatus == FriendshipStatus.SentPending)
+                                {
+                                    <button class="btn btn-secondary w-100 rounded-pill" disabled>
+                                        ⏳ 已發送好友邀請
+                                    </button>
+                                }
+                                else if (candidate.FriendshipStatus == FriendshipStatus.ReceivedPending)
+                                {
+                                    <a asp-controller="Friend" asp-action="Index" class="btn btn-warning w-100 rounded-pill text-dark fw-bold">
+                                        📩 收到好友邀請 (前往確認)
+                                    </a>
+                                }
+                                else
+                                {
+                                    <form asp-controller="Friend" asp-action="SendRequest" method="post">
+                                        <input type="hidden" name="targetEmail" value="@candidate.MemberEmail" />
+                                        <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                        <button type="submit" class="btn btn-outline-primary w-100 rounded-pill">
+                                            ➕ 加為好友
+                                        </button>
+                                    </form>
+                                }
                             </div>
                         </div>
                     </div>
-                </div>
-            }
-        </div>
+                }
+            </div>
+        }
     }
 </div>

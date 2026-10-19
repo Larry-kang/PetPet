@@ -1,62 +1,102 @@
 @model List<PetPet.Domain.Entities.Member>
 @{
     ViewData["Title"] = "會員管理";
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
 }
 
 <div class="container py-5">
-    <h2 class="text-white mb-4">👥 會員管理</h2>
-    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-white mb-0">👥 會員管理</h2>
+        <a asp-action="Index" class="btn btn-outline-light btn-sm">回控制台</a>
+    </div>
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            @TempData["Message"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     <div class="glass-card p-4">
-        <table class="table table-hover text-white">
-            <thead>
-                <tr>
-                    <th>Email</th>
-                    <th>姓名</th>
-                    <th>電話</th>
-                    <th>狀態</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var user in Model)
-                {
+        <div class="table-responsive">
+            <table class="table table-hover text-white align-middle">
+                <thead>
                     <tr>
-                        <td>
-                            @user.Email
-                            @if(user.IsAdmin) { <span class="badge bg-warning text-dark ms-2">Admin</span> }
-                        </td>
-                        <td>@user.Name</td>
-                        <td>@user.Phone</td>
-                        <td>
-                            @if (user.IsEnabled)
-                            {
-                                <span class="badge bg-success">正常</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-secondary">停權</span>
-                            }
-                        </td>
-                        <td>
-                            @if (!user.IsAdmin)
-                            {
-                                <form asp-action="ToggleUser" method="post" style="display:inline;">
-                                    <input type="hidden" name="email" value="@user.Email" />
-                                    @if (user.IsEnabled)
-                                    {
-                                        <button type="submit" class="btn btn-danger btn-sm">停權</button>
-                                    }
-                                    else
-                                    {
-                                        <button type="submit" class="btn btn-success btn-sm">啟用</button>
-                                    }
-                                </form>
-                            }
-                        </td>
+                        <th>Email</th>
+                        <th>姓名</th>
+                        <th>狀態</th>
+                        <th>操作</th>
                     </tr>
-                }
-            </tbody>
-        </table>
-        <a href="/Admin/Index" class="btn btn-outline-light mt-3">回控制台</a>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>
+                                @user.Email
+                                @if (user.IsAdmin) { <span class="badge bg-warning text-dark ms-2">Admin</span> }
+                            </td>
+                            <td>@user.Name</td>
+                            <td>
+                                @if (user.IsEnabled)
+                                {
+                                    <span class="badge bg-success">正常</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">停權</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!user.IsAdmin)
+                                {
+                                    <form asp-action="SetUserEnabled" method="post" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="email" value="@user.Email" />
+                                        <input type="hidden" name="enabled" value="@((!user.IsEnabled).ToString().ToLower())" />
+                                        <input type="hidden" name="version" value="@user.Version" />
+                                        <input type="hidden" name="reason" value="管理員介面手動操作" />
+                                        @if (user.IsEnabled)
+                                        {
+                                            <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill" onclick="return confirm('確定要停權 @user.Name 嗎？');">🚫 停權</button>
+                                        }
+                                        else
+                                        {
+                                            <button type="submit" class="btn btn-outline-success btn-sm rounded-pill">✅ 啟用</button>
+                                        }
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="text-white-50 small">受保護管理員</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (totalPages > 1)
+        {
+            <nav aria-label="會員分頁" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
+                        <a class="page-link" asp-action="ManageUsers" asp-route-page="@(currentPage - 1)">上一頁</a>
+                    </li>
+                    @for (int p = 1; p <= totalPages; p++)
+                    {
+                        <li class="page-item @(p == currentPage ? "active" : "")">
+                            <a class="page-link" asp-action="ManageUsers" asp-route-page="@p">@p</a>
+                        </li>
+                    }
+                    <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
+                        <a class="page-link" asp-action="ManageUsers" asp-route-page="@(currentPage + 1)">下一頁</a>
+                    </li>
+                </ul>
+            </nav>
+        }
     </div>
 </div>

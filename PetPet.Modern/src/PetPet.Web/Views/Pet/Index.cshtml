@@ -1,51 +1,106 @@
 @model IEnumerable<PetPet.Domain.Entities.Pet>
 @{
     ViewData["Title"] = "我的萌寵";
+    var varieties = ViewBag.Varieties as Dictionary<int, string> ?? [];
 }
 
-<div class="row mb-4 align-items-center">
-    <div class="col-8">
-        <h1 class="display-6">🐶 我的萌寵</h1>
-        <p class="text-muted">管理您的寶貝寵物資料</p>
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="display-6 fw-bold mb-1">🐶 我的萌寵</h1>
+            <p class="text-muted">管理您的毛孩寶貝檔案</p>
+        </div>
+        <div>
+            <a asp-action="Create" class="btn btn-primary rounded-pill shadow-sm px-4">
+                ➕ 新增寵物
+            </a>
+        </div>
     </div>
-    <div class="col-4 text-end">
-        <a asp-action="Create" class="btn btn-lg btn-warning text-white rounded-pill shadow-sm">
-            ➕ 新增寵物
-        </a>
-    </div>
-</div>
 
-<div class="row row-cols-1 row-cols-md-3 g-4">
-    @foreach (var item in Model)
+    @if (TempData["SuccessMessage"] != null)
     {
-        <div class="col">
-            <div class="card glass-card h-100">
-                <div class="position-relative">
-                    <img src="https://placehold.co/600x400/orange/white?text=@item.Name" class="card-img-top" alt="@item.Name">
-                    <span class="position-absolute top-0 end-0 m-2 badge rounded-pill bg-light text-dark shadow-sm">
-                        @(item.Gender ? "♂️ 男生" : "♀️ 女生")
-                    </span>
-                </div>
-                <div class="card-body text-center">
-                    <h5 class="card-title fw-bold mb-1">@item.Name</h5>
-                    <p class="text-muted small">品種編號: @item.VarietyId</p>
-                </div>
-                <div class="card-footer bg-transparent border-top-0 pb-3 text-center">
-                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('確定要移除 @item.Name 嗎？');">
-                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill w-100">🗑️ 移除</button>
-                    </form>
-                </div>
-            </div>
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
 
     @if (!Model.Any())
     {
-        <div class="col-12 text-center mt-5">
-            <div class="text-muted display-1 mb-3">🐕</div>
-            <h3>目前沒有寵物資料</h3>
-            <p>趕快幫您的寶貝建檔吧！</p>
-            <a asp-action="Create" class="btn btn-warning text-white mt-2">立即新增</a>
+        <div class="card shadow-sm border-0 text-center p-5 my-4 rounded-3">
+            <div class="display-1 mb-3">🐾</div>
+            <h3 class="fw-bold">尚未新增寵物資料</h3>
+            <p class="text-muted mb-4">趕快幫您的寶貝建立專屬檔案，開啟玩伴推薦與社群互動吧！</p>
+            <div>
+                <a asp-action="Create" class="btn btn-primary btn-lg rounded-pill px-5">
+                    🚀 立即為寶貝建檔
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            @foreach (var item in Model)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 rounded-3 overflow-hidden position-relative">
+                        @if (!item.IsPublic)
+                        {
+                            <span class="position-absolute top-0 start-0 m-3 badge rounded-pill bg-warning text-dark shadow-sm">
+                                🔒 私人
+                            </span>
+                        }
+                        <div class="position-relative text-center p-4 bg-light">
+                            <a asp-action="Details" asp-route-id="@item.Id">
+                                <img src="@(string.IsNullOrEmpty(item.Photo) ? "/images/presets/avatar-dog.svg" : item.Photo)"
+                                     class="rounded-circle border border-3 border-white shadow-sm object-fit-cover"
+                                     width="110" height="110" alt="@item.Name">
+                            </a>
+                            <span class="position-absolute top-0 end-0 m-3 badge rounded-pill bg-white text-dark border shadow-sm">
+                                @(item.Gender == true ? "♂️ 男生" : (item.Gender == false ? "♀️ 女生" : "❓ 未知"))
+                            </span>
+                        </div>
+                        <div class="card-body text-center p-4">
+                            <h4 class="card-title fw-bold mb-1">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none text-dark">
+                                    @item.Name
+                                </a>
+                            </h4>
+                            <p class="badge bg-primary bg-opacity-10 text-primary mb-2">
+                                @(item.VarietyId.HasValue && varieties.ContainsKey(item.VarietyId.Value)
+                                    ? varieties[item.VarietyId.Value]
+                                    : (item.KindCode == "Cat" ? "🐱 貓咪" : "🐶 狗狗"))
+                            </p>
+                            @if (!string.IsNullOrEmpty(item.Bio))
+                            {
+                                <p class="text-muted small mt-2 text-truncate">@item.Bio</p>
+                            }
+                        </div>
+                        <div class="card-footer bg-white border-top-0 pb-4 px-4 d-flex gap-2">
+                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-secondary btn-sm rounded-pill flex-fill">
+                                查看
+                            </a>
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-primary btn-sm rounded-pill flex-fill">
+                                編輯
+                            </a>
+                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="flex-fill" onsubmit="return confirm('確定要移除 @item.Name 嗎？');">
+                                <input type="hidden" name="version" value="@item.Version" />
+                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill w-100">
+                                    移除
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
     }
 </div>

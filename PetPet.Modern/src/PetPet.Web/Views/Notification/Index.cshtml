@@ -1,0 +1,117 @@
+@model PetPet.Web.Controllers.NotificationViewModel
+@{
+    ViewData["Title"] = "站內通知";
+}
+
+<div class="container my-4">
+    <div class="row align-items-center mb-4">
+        <div class="col-md-7">
+            <h1 class="display-6 fw-bold">🔔 站內通知</h1>
+            <p class="text-muted mb-0">即時掌握好友互動、留言回應與毛孩社群新動態</p>
+        </div>
+        <div class="col-md-5 text-md-end mt-3 mt-md-0">
+            @if (Model.UnreadCount > 0)
+            {
+                <form asp-action="MarkAllRead" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-outline-primary rounded-pill px-4">
+                        ✓ 全部標示為已讀
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!Model.Items.Any())
+    {
+        <div class="card border-0 shadow-sm p-5 text-center rounded-3">
+            <div class="display-1 text-muted mb-3">📭</div>
+            <h4>目前沒有任何通知</h4>
+            <p class="text-muted">當有好友邀請或貼文留言時，會顯示在此處。</p>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm border-0 rounded-3 overflow-hidden mb-4">
+            <div class="list-group list-group-flush">
+                @foreach (var n in Model.Items)
+                {
+                    <div class="list-group-item p-3 @(!n.ReadAt.HasValue ? "bg-light bg-opacity-75" : "")">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3 fs-3">
+                                @if (n.Type == "friend_requested")
+                                {
+                                    <span>👥</span>
+                                }
+                                else if (n.Type == "friend_accepted")
+                                {
+                                    <span>🤝</span>
+                                }
+                                else if (n.Type == "comment_created")
+                                {
+                                    <span>💬</span>
+                                }
+                                else
+                                {
+                                    <span>🔔</span>
+                                }
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold @(!n.ReadAt.HasValue ? "text-dark" : "text-secondary")">
+                                        @n.Summary
+                                    </span>
+                                    <small class="text-muted ms-2">@n.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</small>
+                                </div>
+                                <div class="mt-1 d-flex gap-3 align-items-center">
+                                    @if (n.TargetType == "Friend")
+                                    {
+                                        <a asp-controller="Friend" asp-action="Index" class="btn btn-sm btn-link p-0 text-decoration-none">查看好友清單 ➜</a>
+                                    }
+                                    else if (n.TargetType == "Post" && n.TargetId.HasValue)
+                                    {
+                                        <a asp-controller="Post" asp-action="Details" asp-route-id="@n.TargetId.Value" class="btn btn-sm btn-link p-0 text-decoration-none">查看貼文 ➜</a>
+                                    }
+
+                                    @if (!n.ReadAt.HasValue)
+                                    {
+                                        <form asp-action="MarkRead" method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@n.Id" />
+                                            <button type="submit" class="btn btn-sm btn-link text-muted p-0 text-decoration-none">標為已讀</button>
+                                        </form>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="d-flex justify-content-center my-4">
+                <nav aria-label="通知分頁">
+                    <ul class="pagination">
+                        <li class="page-item @(!Model.HasPrevious ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage - 1)">上一頁</a>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">第 @Model.CurrentPage 頁 / 共 @Model.TotalPages 頁</span>
+                        </li>
+                        <li class="page-item @(!Model.HasNext ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage + 1)">下一頁</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+    }
+</div>

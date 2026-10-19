@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -25,29 +25,60 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">首頁</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="News" asp-action="Index">最新消息</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Post" asp-action="Index">社群動態</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Post" asp-action="Index">社群動態</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Match" asp-action="Index">玩伴推薦</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Pet" asp-action="Index">我的萌寵</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Member" asp-action="Index">會員管理</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Friend" asp-action="Index">好友管理</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">隱私權</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Chat" asp-action="Index">即時私訊</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Search" asp-action="Index">🔍 搜尋</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="News" asp-action="Index">最新消息</a>
+                        </li>
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-danger fw-bold" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    🛡️ 管理後台
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="ManageUsers">會員管理</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="ManageReports">檢舉處理</a></li>
+                                </ul>
+                            </li>
+                        }
                     </ul>
                     <ul class="navbar-nav">
                         @if (User.Identity!.IsAuthenticated)
                         {
                             <li class="nav-item">
-                                <span class="nav-link text-dark">嗨, @User.Identity.Name</span>
+                                <a class="nav-link text-dark" asp-controller="Notification" asp-action="Index">🔔 通知</a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-danger" asp-controller="Member" asp-action="Logout">登出</a>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    嗨, @User.Identity.Name
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                    <li><a class="dropdown-item" href="/Account/Profile">⚙️ 個人設定</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Block" asp-action="Index">🚫 封鎖名單</a></li>
+                                    <li><a class="dropdown-item" href="/Account/ChangePassword">🔒 修改密碼</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form asp-controller="Member" asp-action="Logout" method="post" class="px-3 py-1">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger w-100 rounded-pill">登出</button>
+                                        </form>
+                                    </li>
+                                </ul>
                             </li>
                         }
                         else

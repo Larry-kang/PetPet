@@ -1,6 +1,17 @@
-﻿{
+{
   "$schema": "https://json.schemastore.org/launchsettings.json",
   "profiles": {
+    "Demo": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://127.0.0.1:5213",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Demo",
+        "Demo__Enabled": "true",
+        "Database__Provider": "Sqlite"
+      }
+    },
     "http": {
       "commandName": "Project",
       "dotnetRunMessages": true,

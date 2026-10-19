@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -8,7 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.0" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
@@ -23,6 +25,8 @@
     <ProjectReference Include="..\..\src\PetPet.Domain\PetPet.Domain.csproj" />
     <ProjectReference Include="..\..\src\PetPet.Application\PetPet.Application.csproj" />
     <ProjectReference Include="..\..\src\PetPet.Infrastructure\PetPet.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\PetPet.Migrations.Sqlite\PetPet.Migrations.Sqlite.csproj" />
+    <ProjectReference Include="..\..\src\PetPet.Web\PetPet.Web.csproj" />
   </ItemGroup>
 
 </Project>

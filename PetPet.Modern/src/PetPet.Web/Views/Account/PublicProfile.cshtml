@@ -1,0 +1,138 @@
+@model PetPet.Application.Members.PublicMemberProfileDto
+@{
+    ViewData["Title"] = Model.Name + " 的個人檔案";
+}
+
+<div class="container my-4">
+    <!-- Member Header Card -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4 overflow-hidden">
+        <div class="p-4 p-md-5 bg-light text-center">
+            <div class="rounded-circle mx-auto bg-white border d-flex justify-content-center align-items-center overflow-hidden shadow-sm mb-3" style="width: 100px; height: 100px;">
+                @if (!string.IsNullOrEmpty(Model.Photo))
+                {
+                    <img src="@Model.Photo" class="w-100 h-100 object-fit-cover" alt="@Model.Name">
+                }
+                else
+                {
+                    <span class="fs-1 text-secondary">@(Model.Name.Length > 0 ? Model.Name.Substring(0, 1) : "?")</span>
+                }
+            </div>
+            <h2 class="fw-bold mb-1">@Model.Name</h2>
+            @if (!string.IsNullOrEmpty(Model.CityName))
+            {
+                <span class="badge bg-secondary-subtle text-secondary border mb-2">📍 @Model.CityName</span>
+            }
+            @if (!string.IsNullOrEmpty(Model.Bio))
+            {
+                <p class="text-secondary mx-auto mt-2 mb-3" style="max-width: 600px; white-space: pre-line;">@Model.Bio</p>
+            }
+
+            <div class="mt-3">
+                @if (Model.IsSelf)
+                {
+                    <a asp-action="Profile" class="btn btn-outline-primary rounded-pill px-4">
+                        ✏️ 編輯個人資料
+                    </a>
+                }
+                else if (User.Identity?.IsAuthenticated == true)
+                {
+                    <div class="d-inline-flex gap-2">
+                        @if (Model.IsFriend)
+                        {
+                            <span class="badge bg-success rounded-pill p-2 px-3 fs-6">🤝 已是好友</span>
+                            <a href="/Chat/Index?with=@Model.Name" class="btn btn-primary rounded-pill px-4">💬 發送私訊</a>
+                        }
+                        else if (Model.HasPendingRequest)
+                        {
+                            <span class="badge bg-secondary rounded-pill p-2 px-3 fs-6">⏳ 好友邀請處理中</span>
+                        }
+                        <form asp-controller="Block" asp-action="Create" method="post" onsubmit="return confirm('確定要封鎖此會員嗎？封鎖後雙方將無法互動。');" class="d-inline">
+                            <input type="hidden" name="targetPublicId" value="@Model.PublicId" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill">🚫 封鎖會員</button>
+                        </form>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Pets Section -->
+    <div class="mb-4">
+        <h4 class="fw-bold mb-3">🐾 毛孩小夥伴 (@Model.Pets.Count)</h4>
+        @if (!Model.Pets.Any())
+        {
+            <div class="card border-0 shadow-sm p-4 text-center text-muted rounded-3">
+                <span>目前尚未公開任何寵物檔案</span>
+            </div>
+        }
+        else
+        {
+            <div class="row g-3">
+                @foreach (var pet in Model.Pets)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card border-0 shadow-sm rounded-3 h-100 p-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="rounded-circle bg-light border d-flex justify-content-center align-items-center overflow-hidden me-3" style="width: 50px; height: 50px;">
+                                    @if (!string.IsNullOrEmpty(pet.Photo))
+                                    {
+                                        <img src="@pet.Photo" class="w-100 h-100 object-fit-cover" alt="@pet.Name">
+                                    }
+                                    else
+                                    {
+                                        <span>🐾</span>
+                                    }
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0">@pet.Name</h6>
+                                    <small class="text-muted">@(pet.VarietyName ?? (pet.KindCode == "Dog" ? "狗狗" : "貓咪"))</small>
+                                </div>
+                            </div>
+                            @if (!string.IsNullOrEmpty(pet.Bio))
+                            {
+                                <p class="text-secondary small mb-2 text-truncate">@pet.Bio</p>
+                            }
+                            @if (pet.EstimatedAgeMonths.HasValue)
+                            {
+                                <div class="text-muted small">年齡：約 @(pet.EstimatedAgeMonths.Value / 12) 歲 @(pet.EstimatedAgeMonths.Value % 12) 個月</div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Posts Section -->
+    <div>
+        <h4 class="fw-bold mb-3">📝 最新發文 (@Model.Posts.Count)</h4>
+        @if (!Model.Posts.Any())
+        {
+            <div class="card border-0 shadow-sm p-4 text-center text-muted rounded-3">
+                <span>目前尚未發佈任何公開貼文</span>
+            </div>
+        }
+        else
+        {
+            <div class="row g-3">
+                @foreach (var post in Model.Posts)
+                {
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm rounded-3 h-100 p-3">
+                            <h5 class="fw-bold">
+                                <a asp-controller="Post" asp-action="Details" asp-route-id="@post.Id" class="text-decoration-none text-dark">
+                                    @post.Title
+                                </a>
+                            </h5>
+                            <p class="text-secondary small mb-3">@post.Snippet</p>
+                            <div class="mt-auto d-flex justify-content-between align-items-center text-muted small">
+                                <span>發布於 @post.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd")</span>
+                                <span>❤️ @post.LikeCount | 💬 @post.CommentCount</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

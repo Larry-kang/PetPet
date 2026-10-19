@@ -1,0 +1,188 @@
+@model PetPet.Application.Moderation.AdminReportsViewModel
+@{
+    ViewData["Title"] = "檢舉管理";
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">🛡️ 檢舉處理專區</h2>
+            <p class="text-muted mb-0">審核社群違規貼文與處置紀錄</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm rounded-pill px-3">返回管理總覽</a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Status Tabs -->
+    <ul class="nav nav-pills mb-4 gap-2">
+        <li class="nav-item">
+            <a class="nav-link rounded-pill @(Model.Status == "Pending" ? "active" : "")" asp-action="ManageReports" asp-route-status="Pending">
+                待處理 <span class="badge bg-danger ms-1">@Model.PendingCount</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link rounded-pill @(Model.Status == "Resolved" ? "active" : "")" asp-action="ManageReports" asp-route-status="Resolved">
+                已處置 <span class="badge bg-success ms-1">@Model.ResolvedCount</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link rounded-pill @(Model.Status == "Dismissed" ? "active" : "")" asp-action="ManageReports" asp-route-status="Dismissed">
+                已駁回 <span class="badge bg-secondary ms-1">@Model.DismissedCount</span>
+            </a>
+        </li>
+    </ul>
+
+    @if (!Model.Reports.Any())
+    {
+        <div class="card border-0 shadow-sm p-5 text-center rounded-3">
+            <h4 class="text-muted">目前此狀態下沒有任何檢舉案件 🎉</h4>
+        </div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm rounded-3 overflow-hidden p-3">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>編號</th>
+                            <th>類別</th>
+                            <th>檢舉者 / 說明</th>
+                            <th>被檢舉貼文</th>
+                            <th>建立時間</th>
+                            <th>處理狀態</th>
+                            <th class="text-end">管理動作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Reports)
+                        {
+                            <tr>
+                                <td><span class="fw-bold">#@item.Id</span></td>
+                                <td>
+                                    <span class="badge bg-warning text-dark border">@item.Category</span>
+                                </td>
+                                <td>
+                                    <div class="fw-bold small">@item.ReporterName</div>
+                                    <div class="text-muted small text-truncate" style="max-width: 200px;">@(string.IsNullOrEmpty(item.Reason) ? "(無補充說明)" : item.Reason)</div>
+                                </td>
+                                <td>
+                                    @if (item.PostId.HasValue)
+                                    {
+                                        <div>
+                                            <a asp-controller="Post" asp-action="Details" asp-route-id="@item.PostId.Value" class="text-dark fw-bold text-decoration-none" target="_blank">
+                                                @item.PostTitle
+                                            </a>
+                                            <span class="text-muted small d-block">作者：@item.PostAuthorName</span>
+                                            @if (!item.PostIsEnabled)
+                                            {
+                                                <span class="badge bg-danger-subtle text-danger border">已隱藏</span>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">貼文已刪除</span>
+                                    }
+                                </td>
+                                <td>
+                                    <small class="text-muted">@item.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</small>
+                                </td>
+                                <td>
+                                    @if (item.Status == "Pending")
+                                    {
+                                        <span class="badge bg-danger">待處理</span>
+                                    }
+                                    else if (item.Status == "Resolved")
+                                    {
+                                        <span class="badge bg-success">已處置</span>
+                                        @if (!string.IsNullOrEmpty(item.HandlingNote))
+                                        {
+                                            <small class="text-muted d-block mt-1">@item.HandlingNote</small>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">已駁回</span>
+                                        @if (!string.IsNullOrEmpty(item.HandlingNote))
+                                        {
+                                            <small class="text-muted d-block mt-1">@item.HandlingNote</small>
+                                        }
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    @if (item.Status == "Pending")
+                                    {
+                                        <div class="d-inline-flex gap-2">
+                                            <!-- Resolve Form -->
+                                            <form asp-action="ResolveReport" method="post" class="d-inline">
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <input type="hidden" name="version" value="@item.Version" />
+                                                <input type="hidden" name="hidePost" value="true" />
+                                                <input type="hidden" name="note" value="確認違規，隱藏貼文" />
+                                                <button type="submit" class="btn btn-sm btn-danger rounded-pill px-3" onclick="return confirm('確定要處置此案件並隱藏違規貼文嗎？');">
+                                                    處置並隱藏貼文
+                                                </button>
+                                            </form>
+                                            <!-- Dismiss Form -->
+                                            <form asp-action="DismissReport" method="post" class="d-inline">
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <input type="hidden" name="version" value="@item.Version" />
+                                                <input type="hidden" name="note" value="經查核未達違規標準，予以駁回" />
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                                    駁回
+                                                </button>
+                                            </form>
+                                        </div>
+                                    }
+                                    else if (item.PostId.HasValue && !item.PostIsEnabled && !item.PostIsDeleted)
+                                    {
+                                        <form asp-action="RestorePost" method="post" class="d-inline">
+                                            <input type="hidden" name="postId" value="@item.PostId.Value" />
+                                            <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                                                復原貼文顯示
+                                            </button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="d-flex justify-content-center my-4">
+                <nav aria-label="檢舉分頁">
+                    <ul class="pagination">
+                        <li class="page-item @(!Model.HasPrevious ? "disabled" : "")">
+                            <a class="page-link" asp-action="ManageReports" asp-route-status="@Model.Status" asp-route-page="@(Model.CurrentPage - 1)">上一頁</a>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">第 @Model.CurrentPage 頁 / 共 @Model.TotalPages 頁</span>
+                        </li>
+                        <li class="page-item @(!Model.HasNext ? "disabled" : "")">
+                            <a class="page-link" asp-action="ManageReports" asp-route-status="@Model.Status" asp-route-page="@(Model.CurrentPage + 1)">下一頁</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+    }
+</div>

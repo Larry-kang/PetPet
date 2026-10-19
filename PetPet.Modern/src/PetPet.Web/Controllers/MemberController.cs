@@ -1,44 +1,40 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PetPet.Domain.Entities;
-using PetPet.Infrastructure.Data;
+using Microsoft.AspNetCore.RateLimiting;
+using PetPet.Application.Members;
 using System.Security.Claims;
 
 namespace PetPet.Web.Controllers;
 
 public class MemberController : Controller
 {
-    private readonly PetPetDbContext _context;
+    private readonly MemberAccountService _accounts;
 
-    public MemberController(PetPetDbContext context)
+    public MemberController(MemberAccountService accounts)
     {
-        _context = context;
+        _accounts = accounts;
     }
 
     // GET: Member/Login
-    public IActionResult Login()
+    public IActionResult Login(string? returnUrl = null)
     {
+        ViewData["ReturnUrl"] = returnUrl;
         return View();
     }
 
     // POST: Member/Login
     [HttpPost]
-    public async Task<IActionResult> Login(string email, string password)
+    [ValidateAntiForgeryToken]
+    [EnableRateLimiting("login-limit")]
+    public async Task<IActionResult> Login(string email, string password, string? returnUrl = null)
     {
-        var member = await _context.Members
-            .FirstOrDefaultAsync(m => m.Email == email && m.Password == password);
+        var member = await _accounts.AuthenticateAsync(email, password);
 
         if (member == null)
         {
-            ViewData["Error"] = "帳號或密碼錯誤";
-            return View();
-        }
-
-        if (!member.IsEnabled)
-        {
-            ViewData["Error"] = "此帳號已被停權";
+            ViewData["Error"] = "帳號或密碼錯誤，或此帳號已被停權";
+            ViewData["ReturnUrl"] = returnUrl;
             return View();
         }
 
@@ -46,8 +42,10 @@ public class MemberController : Controller
         {
             new Claim(ClaimTypes.Name, member.Name),
             new Claim(ClaimTypes.Email, member.Email),
-            new Claim(ClaimTypes.NameIdentifier, member.Email), // Critical for SignalR
-            new Claim("MemberId", member.Email) // Legacy support
+            new Claim(ClaimTypes.NameIdentifier, member.Email),
+            new Claim("PublicId", member.PublicId.ToString()),
+            new Claim("SecurityStamp", member.SecurityStamp),
+            new Claim("MemberId", member.Email)
         };
 
         if (member.IsAdmin)
@@ -56,27 +54,51 @@ public class MemberController : Controller
         }
 
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var authProperties = new AuthenticationProperties();
+        claimsIdentity.AddClaim(new Claim("IssuedUtc", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString()));
+
+        var authProperties = new AuthenticationProperties
+        {
+            IsPersistent = true,
+            IssuedUtc = DateTimeOffset.UtcNow
+        };
 
         await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
             new ClaimsPrincipal(claimsIdentity),
             authProperties);
 
-        return RedirectToAction("Index", "Home");
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+
+        return RedirectToAction("Index", "Post");
     }
 
-    // GET: Member/Logout
+    // POST: Member/Logout
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return RedirectToAction("Index", "Home");
     }
 
-    // GET: Member
-    public async Task<IActionResult> Index()
+    // GET: Member/Logout - Refuses to sign out on GET per PP-SEC-02
+    [HttpGet]
+    public IActionResult Logout(string? dummy = null)
     {
-        return View(await _context.Members.ToListAsync());
+        return RedirectToAction("Index", "Home");
+    }
+
+    // GET: Member
+    public IActionResult Index()
+    {
+        if (User.IsInRole("Admin"))
+        {
+            return RedirectToAction("ManageUsers", "Admin");
+        }
+        return RedirectToAction("Index", "Home");
     }
 
     // GET: Member/Register
@@ -88,21 +110,14 @@ public class MemberController : Controller
     // POST: Member/Register
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Register([Bind("Email,Password,Name,Phone")] Member member)
+    [EnableRateLimiting("register-limit")]
+    public async Task<IActionResult> Register(RegisterMember member)
     {
         if (ModelState.IsValid)
         {
-            // Set defaults for required fields not in form
-            member.Birthday = DateTime.Now; // Temporary default
-            member.CityId = 1; // Temporary default
-            member.Gender = true; // Temporary default
-            member.IsEnabled = true;
-            member.IsMatchEnabled = false;
-            member.Photo = "default.jpg";
-
-            _context.Add(member);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            if (await _accounts.RegisterAsync(member))
+                return RedirectToAction(nameof(Login));
+            ModelState.AddModelError(string.Empty, "此 Email 已註冊");
         }
         return View(member);
     }

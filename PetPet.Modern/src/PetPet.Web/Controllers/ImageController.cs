@@ -1,61 +1,71 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PetPet.Application.Media;
+using System.Security.Claims;
 
-namespace PetPet.Web.Controllers
+namespace PetPet.Web.Controllers;
+
+[Authorize]
+public class ImageController : Controller
 {
-    [Authorize]
-    public class ImageController : Controller
+    private readonly IMediaService _mediaService;
+
+    public ImageController(IMediaService mediaService)
     {
-        private readonly IWebHostEnvironment _env;
+        _mediaService = mediaService;
+    }
 
-        public ImageController(IWebHostEnvironment env)
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Upload(IFormFile file)
+    {
+        var currentEmail = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(currentEmail))
         {
-            _env = env;
+            return Unauthorized();
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Upload(IFormFile file)
+        if (file == null || file.Length == 0)
         {
-            if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded.");
-
-            if (file.Length > 5 * 1024 * 1024) // 5MB
-                return BadRequest("File size exceeds 5MB limit.");
-
-            var ext = Path.GetExtension(file.FileName).ToLower();
-            if (ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".gif")
-                return BadRequest("Only images (jpg, png, gif) are allowed.");
-
-            // Create Directory
-            var uploadDir = Path.Combine(_env.WebRootPath, "uploads");
-            if (!Directory.Exists(uploadDir))
-                Directory.CreateDirectory(uploadDir);
-
-            // Save File
-            var fileName = Guid.NewGuid().ToString() + ext;
-            var filePath = Path.Combine(uploadDir, fileName);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-
-            return Json(new { url = $"/uploads/{fileName}" });
+            return BadRequest("請選擇要上傳的圖片檔案。");
         }
 
-        [HttpGet]
-        public IActionResult Presets()
+        if (file.Length > 5 * 1024 * 1024)
         {
-            // For MVP, return hardcoded list of generated SVGs
-            // In a real app, scan the directory
-            var presets = new List<string>
-            {
-                "/images/presets/avatar-dog.svg",
-                "/images/presets/avatar-cat.svg",
-                "/images/presets/avatar-boy.svg",
-                "/images/presets/avatar-girl.svg"
-            };
-            return Json(presets);
+            return StatusCode(StatusCodes.Status413PayloadTooLarge, "檔案大小超過 5 MiB 限制。");
         }
+
+        try
+        {
+            using var stream = file.OpenReadStream();
+            var result = await _mediaService.UploadImageAsync(stream, file.ContentType, file.Length, currentEmail);
+            return Json(new { id = result.Id, url = result.Url });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(StatusCodes.Status413PayloadTooLarge, ex.Message);
+        }
+        catch (Exception)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, "圖片上傳處理失敗。");
+        }
+    }
+
+    [AllowAnonymous]
+    [HttpGet]
+    public IActionResult Presets()
+    {
+        var presets = new List<string>
+        {
+            "/images/presets/avatar-dog.svg",
+            "/images/presets/avatar-cat.svg",
+            "/images/presets/avatar-boy.svg",
+            "/images/presets/avatar-girl.svg"
+        };
+        return Json(presets);
     }
 }

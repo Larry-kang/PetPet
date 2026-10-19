@@ -1,27 +1,64 @@
-@model PetPet.Domain.Entities.Pet
+@model PetPet.Application.Pets.CreatePetDto
 @{
     ViewData["Title"] = "新增寵物";
+    var varieties = ViewBag.Varieties as List<PetPet.Domain.Entities.Variety> ?? [];
 }
 
 <div class="container mt-4">
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow border-0">
-                <div class="card-body p-5">
-                    <h2 class="card-title text-center mb-4">🐾 新增寵物</h2>
-                    
-                    <form asp-action="Create">
-                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="col-md-7 col-lg-6">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-body p-4 p-md-5">
+                    <h2 class="card-title text-center mb-4 fw-bold">🐾 新增毛孩檔案</h2>
+
+                    <form asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <!-- 寵物大頭貼預覽與預設選擇 -->
+                        <div class="text-center mb-4">
+                            <img id="previewPetPhoto" src="@(string.IsNullOrEmpty(Model?.Photo) ? "/images/presets/avatar-dog.svg" : Model.Photo)"
+                                 class="rounded-circle border border-3 border-primary shadow-sm object-fit-cover mb-3"
+                                 width="100" height="100" alt="寵物頭像">
+                            <div>
+                                <input type="hidden" asp-for="Photo" id="inputPetPhoto" value="@(string.IsNullOrEmpty(Model?.Photo) ? "/images/presets/avatar-dog.svg" : Model.Photo)" />
+                                <div class="btn-group" role="group" aria-label="選擇預設頭像">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setPresetPhoto('/images/presets/avatar-dog.svg')">🐶 狗頭貼</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setPresetPhoto('/images/presets/avatar-cat.svg')">🐱 貓頭貼</button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm ms-2" id="btnUploadPetPhoto" onclick="openImagePicker('inputPetPhoto', 'previewPetPhoto')">📷 上傳自訂照片</button>
+                                </div>
+                            </div>
+                        </div>
 
                         <div class="mb-3">
-                            <label asp-for="Name" class="form-label fw-bold">寵物名字</label>
-                            <input asp-for="Name" class="form-control form-control-lg" required />
-                            <span asp-validation-for="Name" class="text-danger"></span>
+                            <label asp-for="Name" class="form-label fw-bold">毛孩名字 <span class="text-danger">*</span></label>
+                            <input asp-for="Name" class="form-control form-control-lg rounded-3" placeholder="例如：皮皮、小黑" required maxlength="40" />
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-bold">寵物類別</label>
+                                <select asp-for="KindCode" class="form-select rounded-3">
+                                    <option value="Dog">🐶 狗狗</option>
+                                    <option value="Cat">🐱 貓咪</option>
+                                    <option value="Other">🐾 其他寵物</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold">品種</label>
+                                <select asp-for="VarietyId" class="form-select rounded-3">
+                                    @foreach (var v in varieties)
+                                    {
+                                        <option value="@v.Id">@v.Name</option>
+                                    }
+                                </select>
+                            </div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label fw-bold">性別</label>
-                            <div class="d-flex gap-3">
+                            <div class="d-flex gap-4">
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" asp-for="Gender" value="true" id="genderMale" checked>
                                     <label class="form-check-label" for="genderMale">♂️ 男生</label>
@@ -30,20 +67,42 @@
                                     <input class="form-check-input" type="radio" asp-for="Gender" value="false" id="genderFemale">
                                     <label class="form-check-label" for="genderFemale">♀️ 女生</label>
                                 </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" asp-for="Gender" value="" id="genderUnknown">
+                                    <label class="form-check-label" for="genderUnknown">❓ 未知</label>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Temporary: Allow inputting Variety ID directly for now -->
-                        <div class="mb-4">
-                            <label asp-for="VarietyId" class="form-label fw-bold">品種編號</label>
-                            <input asp-for="VarietyId" class="form-control" type="number" value="1" min="1" required />
-                            <div class="form-text">暫時手動輸入品種 ID (未來會改為下拉選單)</div>
-                            <span asp-validation-for="VarietyId" class="text-danger"></span>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label asp-for="BirthDate" class="form-label fw-bold">生日 (選填)</label>
+                                <input asp-for="BirthDate" type="date" class="form-control rounded-3" max="@DateTime.UtcNow.ToString("yyyy-MM-dd")" />
+                                <span asp-validation-for="BirthDate" class="text-danger small"></span>
+                            </div>
+                            <div class="col-6">
+                                <label asp-for="EstimatedAgeMonths" class="form-label fw-bold">估算年齡 (月數)</label>
+                                <input asp-for="EstimatedAgeMonths" type="number" min="0" max="600" class="form-control rounded-3" placeholder="例如：24 (2歲)" />
+                                <span asp-validation-for="EstimatedAgeMonths" class="text-danger small"></span>
+                            </div>
                         </div>
 
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a asp-action="Index" class="btn btn-light me-md-2">取消</a>
-                            <button type="submit" class="btn btn-warning text-white btn-lg px-5">新增</button>
+                        <div class="mb-3">
+                            <label asp-for="Bio" class="form-label fw-bold">簡介 (選填)</label>
+                            <textarea asp-for="Bio" class="form-control rounded-3" rows="3" placeholder="介紹一下牠的個性、喜好或專長吧..." maxlength="500"></textarea>
+                            <span asp-validation-for="Bio" class="text-danger small"></span>
+                        </div>
+
+                        <div class="form-check form-switch mb-4">
+                            <input class="form-check-input" type="checkbox" role="switch" asp-for="IsPublic" id="isPublicSwitch" checked>
+                            <label class="form-check-label fw-bold" for="isPublicSwitch">
+                                公開此寵物檔案 (讓其他會員能在您的個人頁與配對中看到)
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill">儲存並建立檔案</button>
+                            <a asp-action="Index" class="btn btn-light rounded-pill">取消</a>
                         </div>
                     </form>
                 </div>
@@ -54,4 +113,11 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <partial name="_ImagePicker" />
+    <script>
+        function setPresetPhoto(path) {
+            document.getElementById('inputPetPhoto').value = path;
+            document.getElementById('previewPetPhoto').src = path;
+        }
+    </script>
 }

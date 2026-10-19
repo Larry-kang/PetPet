@@ -1,0 +1,101 @@
+@model PetPet.Application.Pets.PetDetailDto
+@{
+    ViewData["Title"] = Model.Name + " 的寵物檔案";
+}
+
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="mb-3">
+                <a asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill">
+                    ⬅️ 返回寵物列表
+                </a>
+            </div>
+
+            <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+                <div class="text-center pt-5 pb-3 bg-light">
+                    <div class="rounded-circle mx-auto bg-white border d-flex justify-content-center align-items-center overflow-hidden shadow-sm mb-3" style="width: 110px; height: 110px;">
+                        @if (!string.IsNullOrEmpty(Model.Photo))
+                        {
+                            <img src="@Model.Photo" class="w-100 h-100 object-fit-cover" alt="@Model.Name">
+                        }
+                        else
+                        {
+                            <span class="display-4">🐾</span>
+                        }
+                    </div>
+                    <h2 class="fw-bold mb-1">@Model.Name</h2>
+                    <div class="d-flex justify-content-center gap-2 mt-2">
+                        <span class="badge bg-primary-subtle text-primary border">@(Model.VarietyName ?? (Model.KindCode == "Dog" ? "狗狗" : "貓咪"))</span>
+                        @if (Model.Gender.HasValue)
+                        {
+                            <span class="badge bg-secondary-subtle text-secondary border">@(Model.Gender.Value ? "男生 ♂" : "女生 ♀")</span>
+                        }
+                        @if (!Model.IsPublic)
+                        {
+                            <span class="badge bg-warning-subtle text-warning border">🔒 私人檔案 (僅自己可見)</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <div class="row g-3 mb-4">
+                        @if (Model.BirthDate.HasValue)
+                        {
+                            <div class="col-sm-6">
+                                <div class="p-3 rounded-2 bg-light border">
+                                    <small class="text-muted d-block">生日</small>
+                                    <span class="fw-bold">@Model.BirthDate.Value.ToString("yyyy/MM/dd")</span>
+                                </div>
+                            </div>
+                        }
+                        @if (Model.EstimatedAgeMonths.HasValue)
+                        {
+                            <div class="col-sm-6">
+                                <div class="p-3 rounded-2 bg-light border">
+                                    <small class="text-muted d-block">估算年齡</small>
+                                    <span class="fw-bold">約 @(Model.EstimatedAgeMonths.Value / 12) 歲 @(Model.EstimatedAgeMonths.Value % 12) 個月</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.Bio))
+                    {
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-muted">毛孩自介</h6>
+                            <p class="fs-6 text-dark" style="white-space: pre-line;">@Model.Bio</p>
+                        </div>
+                    }
+
+                    <hr />
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted d-block">毛家長</small>
+                            <a href="/Members/@Model.OwnerPublicId" class="fw-bold text-dark text-decoration-none">
+                                👤 @Model.OwnerName
+                                @if (!string.IsNullOrEmpty(Model.OwnerCityName))
+                                {
+                                    <span class="text-muted small">(@Model.OwnerCityName)</span>
+                                }
+                            </a>
+                        </div>
+                        @if (Model.IsOwner)
+                        {
+                            <div class="d-flex gap-2">
+                                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary rounded-pill px-3">
+                                    ✏️ 編輯
+                                </a>
+                                <form asp-action="Delete" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('確定要移除此寵物檔案嗎？');" class="d-inline">
+                                    <input type="hidden" name="version" value="@Model.Version" />
+                                    <button type="submit" class="btn btn-outline-danger rounded-pill px-3">移除</button>
+                                </form>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

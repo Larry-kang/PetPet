@@ -1,46 +1,204 @@
-﻿@{
+@{
     ViewData["Title"] = "歡迎來到 PetPet";
+    bool isDemo = ViewBag.IsDemo == true;
 }
 
-<div class="container text-center mt-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <h1 class="display-3 fw-bold text-primary mb-4">🐾 PetPet</h1>
-            <p class="lead text-muted mb-5">
-                專屬於毛孩與主人的溫馨社群。<br>
-                分享生活、記錄成長、結交新朋友。
-            </p>
-            
-            <div class="d-grid gap-3 d-sm-flex justify-content-sm-center mb-5">
-                <a asp-controller="Member" asp-action="Register" class="btn btn-warning btn-lg px-5 py-3 text-white fw-bold shadow-sm rounded-pill">
-                    🚀 立即加入
-                </a>
-                <a asp-controller="Member" asp-action="Login" class="btn btn-outline-secondary btn-lg px-5 py-3 rounded-pill">
-                    🔐 會員登入
-                </a>
+<div class="container mt-4 mb-5">
+    @if (isDemo)
+    {
+        <!-- Demo Banner -->
+        <div class="alert alert-warning border-warning shadow-sm rounded-4 p-4 mb-5" role="alert">
+            <div class="d-flex align-items-center mb-3">
+                <span class="fs-1 me-3">🐾</span>
+                <div>
+                    <h3 class="alert-heading fw-bold mb-1">PetPet.Modern 本機展示環境 (Local Demo Mode)</h3>
+                    <p class="mb-0 text-muted">此環境運行於本機 SQLite 隔離資料庫，已預載固定展示資料集與驗收帳號。</p>
+                </div>
             </div>
+            <hr class="border-warning opacity-50">
+            <!-- Real-time Counters -->
+            <div class="row text-center g-3 my-2">
+                <div class="col-6 col-md-3">
+                    <div class="bg-white p-3 rounded-3 shadow-sm border">
+                        <div class="text-muted small fw-bold">註冊會員數</div>
+                        <div class="fs-2 fw-bolder text-primary">@ViewBag.MemberCount</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="bg-white p-3 rounded-3 shadow-sm border">
+                        <div class="text-muted small fw-bold">寵物名片數</div>
+                        <div class="fs-2 fw-bolder text-success">@ViewBag.PetCount</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="bg-white p-3 rounded-3 shadow-sm border">
+                        <div class="text-muted small fw-bold">社群貼文數</div>
+                        <div class="fs-2 fw-bolder text-info">@ViewBag.PostCount</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="bg-white p-3 rounded-3 shadow-sm border">
+                        <div class="text-muted small fw-bold">留言互動數</div>
+                        <div class="fs-2 fw-bolder text-secondary">@ViewBag.CommentCount</div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-            <div class="row mt-5 g-4 py-5 row-cols-1 row-cols-lg-3">
+        <!-- Quick Login Demo Cards -->
+        <div class="mb-5">
+            <h4 class="fw-bold text-dark mb-3"><i class="bi bi-person-badge-fill me-2 text-primary"></i>展示專用快速登入帳號 (密碼統一為: <code>DemoPass!2026</code>)</h4>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                <!-- 1. Demo Owner -->
                 <div class="col">
-                    <div class="card glass-card h-100 p-4 border-0">
-                        <div class="display-4 mb-3">📸</div>
-                        <h4 class="fw-bold">分享動態</h4>
-                        <p class="text-muted">上傳照片，記錄每一刻萌樣。</p>
+                    <div class="card h-100 shadow-sm border-0 border-top border-4 border-primary">
+                        <div class="card-body">
+                            <span class="badge bg-primary mb-2">飼主展示</span>
+                            <h5 class="card-title fw-bold">陳大明 (4 隻寵物)</h5>
+                            <p class="card-text text-muted small">
+                                <strong>帳號:</strong> <code>demo-owner@example.test</code><br>
+                                <strong>特徵:</strong> 擁有4隻寵物名片、具待接受與已接受好友關係、具多篇貼文與多張照片。
+                            </p>
+                            <form asp-controller="Member" asp-action="Login" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="email" value="demo-owner@example.test" />
+                                <input type="hidden" name="password" value="DemoPass!2026" />
+                                <button type="submit" class="btn btn-outline-primary btn-sm w-100 fw-bold">
+                                    一鍵以此身分登入
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
+
+                <!-- 2. Demo No-Pet -->
                 <div class="col">
-                    <div class="card glass-card h-100 p-4 border-0">
-                        <div class="display-4 mb-3">🐶</div>
-                        <h4 class="fw-bold">寵物名片</h4>
-                        <p class="text-muted">為您的寶貝建立專屬檔案。</p>
+                    <div class="card h-100 shadow-sm border-0 border-top border-4 border-success">
+                        <div class="card-body">
+                            <span class="badge bg-success mb-2">新手展示</span>
+                            <h5 class="card-title fw-bold">林小華 (0 隻寵物)</h5>
+                            <p class="card-text text-muted small">
+                                <strong>帳號:</strong> <code>demo-nopet@example.test</code><br>
+                                <strong>特徵:</strong> 無任何寵物，專用於驗證無寵物導引橫幅、寵物新增引導及配對資格提示。
+                            </p>
+                            <form asp-controller="Member" asp-action="Login" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="email" value="demo-nopet@example.test" />
+                                <input type="hidden" name="password" value="DemoPass!2026" />
+                                <button type="submit" class="btn btn-outline-success btn-sm w-100 fw-bold">
+                                    一鍵以此身分登入
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
+
+                <!-- 3. Demo Friend -->
                 <div class="col">
-                    <div class="card glass-card h-100 p-4 border-0">
-                        <div class="display-4 mb-3">🤝</div>
-                        <h4 class="fw-bold">結交朋友</h4>
-                        <p class="text-muted">認識更多喜愛動物的夥伴。</p>
+                    <div class="card h-100 shadow-sm border-0 border-top border-4 border-info">
+                        <div class="card-body">
+                            <span class="badge bg-info mb-2">好友互動</span>
+                            <h5 class="card-title fw-bold">張美美 (互動好友)</h5>
+                            <p class="card-text text-muted small">
+                                <strong>帳號:</strong> <code>demo-friend@example.test</code><br>
+                                <strong>特徵:</strong> 可接受 owner 邀請、雙向即時聊天、未讀標記、已讀回執驗收。
+                            </p>
+                            <form asp-controller="Member" asp-action="Login" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="email" value="demo-friend@example.test" />
+                                <input type="hidden" name="password" value="DemoPass!2026" />
+                                <button type="submit" class="btn btn-outline-info btn-sm w-100 fw-bold">
+                                    一鍵以此身分登入
+                                </button>
+                            </form>
+                        </div>
                     </div>
+                </div>
+
+                <!-- 4. Admin -->
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 border-top border-4 border-danger">
+                        <div class="card-body">
+                            <span class="badge bg-danger mb-2">系統管理</span>
+                            <h5 class="card-title fw-bold">系統管理員</h5>
+                            <p class="card-text text-muted small">
+                                <strong>帳號:</strong> <code>admin@example.test</code><br>
+                                <strong>特徵:</strong> 擁有後台權限 (Admin Role)，可進行會員停權、檢舉審核、解封等維運操作。
+                            </p>
+                            <form asp-controller="Member" asp-action="Login" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="email" value="admin@example.test" />
+                                <input type="hidden" name="password" value="DemoPass!2026" />
+                                <button type="submit" class="btn btn-outline-danger btn-sm w-100 fw-bold">
+                                    一鍵以此身分登入
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Disabled User -->
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 border-top border-4 border-secondary">
+                        <div class="card-body">
+                            <span class="badge bg-secondary mb-2">停權帳號</span>
+                            <h5 class="card-title fw-bold">被停權用戶</h5>
+                            <p class="card-text text-muted small">
+                                <strong>帳號:</strong> <code>disabled@example.test</code><br>
+                                <strong>特徵:</strong> 處於 IsEnabled=false 狀態，驗證登入失敗攔截、Hub 與 API 存取阻斷。
+                            </p>
+                            <form asp-controller="Member" asp-action="Login" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="email" value="disabled@example.test" />
+                                <input type="hidden" name="password" value="DemoPass!2026" />
+                                <button type="submit" class="btn btn-outline-secondary btn-sm w-100 fw-bold">
+                                    嘗試登入 (預期拒絕)
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Standard Welcome Section -->
+    <div class="text-center py-4">
+        <h1 class="display-4 fw-bold text-primary mb-3">🐾 PetPet 毛孩社群</h1>
+        <p class="lead text-muted mb-4">
+            專屬於毛孩與主人的溫馨社群。<br>
+            分享生活、記錄成長、結交新朋友。
+        </p>
+
+        <div class="d-grid gap-3 d-sm-flex justify-content-sm-center mb-5">
+            <a asp-controller="Member" asp-action="Register" class="btn btn-warning btn-lg px-5 py-3 text-white fw-bold shadow-sm rounded-pill">
+                🚀 立即註冊
+            </a>
+            <a asp-controller="Member" asp-action="Login" class="btn btn-outline-secondary btn-lg px-5 py-3 rounded-pill">
+                🔐 會員登入
+            </a>
+        </div>
+
+        <div class="row mt-4 g-4 row-cols-1 row-cols-lg-3 text-start">
+            <div class="col">
+                <div class="card glass-card h-100 p-4 border-0 shadow-sm">
+                    <div class="display-5 mb-3 text-primary">📸</div>
+                    <h5 class="fw-bold">分享萌寵動態</h5>
+                    <p class="text-muted small">發布貼文、安全上傳照片，記錄每一刻日常與生活互動。</p>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card glass-card h-100 p-4 border-0 shadow-sm">
+                    <div class="display-5 mb-3 text-success">🐶</div>
+                    <h5 class="fw-bold">專屬寵物名片</h5>
+                    <p class="text-muted small">為毛孩建立品種、年齡、性別名片，自訂公開與私密瀏覽。</p>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card glass-card h-100 p-4 border-0 shadow-sm">
+                    <div class="display-5 mb-3 text-info">💬</div>
+                    <h5 class="fw-bold">即時好友聊天</h5>
+                    <p class="text-muted small">雙向好友關係建立，支援 WebSocket 即時傳訊與未讀標記。</p>
                 </div>
             </div>
         </div>

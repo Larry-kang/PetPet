@@ -361,3 +361,16 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# PetPet Demo and Uploads
+**/App_Data/demo/
+**/App_Data/uploads/
+*.db
+*.db-shm
+*.db-wal
+.run.lock
+.init.lock
+
+# Local build and private acceptance evidence
+.artifacts*/
+docs/reviews/results/

@@ -1,122 +1,146 @@
-@model IEnumerable<PetPet.Domain.Entities.Post>
+@model PetPet.Application.Social.PostFeedViewModel
 @{
     ViewData["Title"] = "寵物社群牆";
 }
 
 <div class="row mb-4 align-items-center">
-    <div class="col-8">
-        <h1 class="display-6">🐾 寵物社群牆</h1>
-        <p class="text-muted">即時分享毛孩的點點滴滴</p>
+    <div class="col-md-8">
+        <h1 class="display-6 fw-bold">🐾 寵物社群牆</h1>
+        <p class="text-muted">即時分享毛孩的點點滴滴，探索暖心寵物日常</p>
     </div>
-    <div class="col-4 text-end">
-        <a asp-action="Create" class="btn btn-lg btn-success rounded-pill shadow-sm">
-            ✏️ 發佈貼文
-        </a>
+    <div class="col-md-4 text-md-end mt-2 mt-md-0">
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <a asp-action="Create" class="btn btn-primary rounded-pill px-4 shadow-sm">
+                ✏️ 發佈貼文
+            </a>
+        }
+        else
+        {
+            <a asp-controller="Member" asp-action="Login" class="btn btn-outline-primary rounded-pill px-4">
+                🔑 登入後發文
+            </a>
+        }
     </div>
 </div>
 
-<div class="row">
-    @foreach (var item in Model)
-    {
-        <div class="col-md-8 mx-auto mb-4">
-            <div class="card glass-card h-100">
-                <div class="card-header bg-transparent border-bottom-0 pt-3 ps-4 d-flex align-items-center">
-                    <div class="rounded-circle bg-light d-flex justify-content-center align-items-center text-secondary fw-bold me-2 overflow-hidden" style="width: 40px; height: 40px;">
-                        @if (!string.IsNullOrEmpty(item.Author.Photo))
-                        {
-                            <img src="@item.Author.Photo" class="w-100 h-100 object-fit-cover">
-                        }
-                        else
-                        {
-                            @(item.Author.Name.Length > 0 ? item.Author.Name.Substring(0,1) : "?")
-                        }
-                    </div>
-                    <div>
-                        <h6 class="mb-0 fw-bold">@item.Author.Name</h6>
-                        <small class="text-muted">@item.CreatedAt.ToString("yyyy/MM/dd HH:mm")</small>
-                    </div>
-                    @if (User.Identity!.Name == item.Author.Name)
-                    {
-                        <div class="ms-auto">
-                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('確定要刪除這篇貼文嗎？');">
-                                <button type="submit" class="btn btn-sm btn-link text-danger p-0">刪除</button>
-                            </form>
-                        </div>
-                    }
-                </div>
-                <div class="card-body p-0">
-                    @if (!string.IsNullOrEmpty(item.ImageUrl))
-                    {
-                        <img src="@item.ImageUrl" class="w-100 object-fit-cover" style="max-height: 400px;" alt="@item.Title">
-                    }
-                    <div class="p-4">
-                        <h5 class="card-title fw-bold">@item.Title</h5>
-                        <p class="card-text text-dark" style="white-space: pre-line;">@item.Content</p>
-                    </div>
-                </div>
-                <div class="card-footer bg-transparent border-top-0 pb-3 ps-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="d-flex gap-2">
-                            @{
-                                var isLiked = item.Likes.Any(l => l.UserEmail == User.Identity!.Name);
-                                var likeCount = item.Likes.Count;
-                            }
-                            <form asp-action="Like" asp-route-id="@item.Id" method="post">
-                                <button type="submit" class="btn btn-sm rounded-pill @(isLiked ? "btn-danger" : "btn-outline-danger")">
-                                    @(isLiked ? "❤️" : "🤍") 喜歡 (@likeCount)
-                                </button>
-                            </form>
-                            
-                            <button class="btn btn-sm btn-outline-primary rounded-pill" type="button" data-bs-toggle="collapse" data-bs-target="#comments-@item.Id">
-                                💬 留言 (@item.Comments.Count)
-                            </button>
-                        </div>
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
 
-                        @if (User.Identity!.Name != item.Author.Name)
+<div class="row">
+    @if (!Model.Items.Any())
+    {
+        <div class="col-12 text-center py-5">
+            <div class="text-muted display-1 mb-3">📭</div>
+            <h3>目前還沒有任何貼文</h3>
+            <p class="text-muted">成為第一個在此分享毛孩點滴的飼主吧！</p>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a asp-action="Create" class="btn btn-primary mt-2">立即發文</a>
+            }
+        </div>
+    }
+    else
+    {
+        @foreach (var item in Model.Items)
+        {
+            <div class="col-md-8 mx-auto mb-4">
+                <div class="card shadow-sm border-0 rounded-3 h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-3 ps-4 pe-4 d-flex align-items-center">
+                        <a href="/Members/@item.AuthorPublicId" class="text-decoration-none d-flex align-items-center text-dark">
+                            <div class="rounded-circle bg-light d-flex justify-content-center align-items-center text-secondary fw-bold me-2 overflow-hidden border" style="width: 44px; height: 44px;">
+                                @if (!string.IsNullOrEmpty(item.AuthorPhoto))
+                                {
+                                    <img src="@item.AuthorPhoto" class="w-100 h-100 object-fit-cover" alt="@item.AuthorName">
+                                }
+                                else
+                                {
+                                    <span>@(item.AuthorName.Length > 0 ? item.AuthorName.Substring(0, 1) : "?")</span>
+                                }
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">@item.AuthorName</h6>
+                                <small class="text-muted">@item.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</small>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (!string.IsNullOrEmpty(item.ImageUrl))
                         {
-                            <a asp-controller="Report" asp-action="Create" asp-route-postId="@item.Id" class="text-muted small text-decoration-none">
-                                ⚠️ 檢舉
+                            <a asp-action="Details" asp-route-id="@item.Id">
+                                <img src="@item.ImageUrl" class="w-100 object-fit-cover" style="max-height: 380px;" alt="@item.Title">
                             </a>
                         }
+                        <div class="p-4">
+                            <h5 class="card-title fw-bold">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none text-dark">
+                                    @item.Title
+                                </a>
+                            </h5>
+                            <p class="card-text text-secondary" style="white-space: pre-line;">@item.Snippet</p>
+                        </div>
                     </div>
-
-                    <!-- Comments Section -->
-                    <div class="collapse" id="comments-@item.Id">
-                        <div class="card card-body bg-light border-0 small p-3">
-                            <!-- Comment Form -->
-                            <form asp-action="AddComment" method="post" class="mb-3 d-flex gap-2">
-                                <input type="hidden" name="postId" value="@item.Id" />
-                                <input type="text" name="content" class="form-control form-control-sm rounded-pill" placeholder="寫些什麼..." required />
-                                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">送出</button>
-                            </form>
-
-                            <!-- Comment List -->
-                            @if (item.Comments.Any())
+                    <div class="card-footer bg-white border-top-0 pb-3 ps-4 pe-4 d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            @if (User.Identity?.IsAuthenticated == true)
                             {
-                                <div class="vstack gap-2">
-                                    @foreach(var comment in item.Comments.OrderBy(c => c.CreatedAt))
-                                    {
-                                        <div class="d-flex gap-2">
-                                            <div class="fw-bold">@(comment.Author?.Name ?? "會員")</div>
-                                            <div class="text-dark">@comment.Content</div>
-                                        </div>
-                                    }
-                                </div>
+                                <form asp-action="SetLike" method="post" class="d-inline">
+                                    <input type="hidden" name="postId" value="@item.Id" />
+                                    <input type="hidden" name="desiredLiked" value="@(!item.ViewerHasLiked ? "true" : "false")" />
+                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                    <button type="submit" class="btn btn-sm rounded-pill @(item.ViewerHasLiked ? "btn-danger" : "btn-outline-danger")">
+                                        @(item.ViewerHasLiked ? "❤️" : "🤍") 喜歡 (@item.LikeCount)
+                                    </button>
+                                </form>
                             }
+                            else
+                            {
+                                <span class="badge bg-light text-secondary border p-2">❤️ @item.LikeCount</span>
+                            }
+
+                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary rounded-pill">
+                                💬 留言 (@item.CommentCount)
+                            </a>
+                        </div>
+                        <div>
+                            <a asp-action="Details" asp-route-id="@item.Id" class="text-primary text-decoration-none small fw-bold">
+                                查看全文 ➜
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    }
+        }
 
-    @if (!Model.Any())
-    {
-        <div class="col-12 text-center mt-5">
-            <div class="text-muted display-1 mb-3">📭</div>
-            <h3>目前還沒有貼文</h3>
-            <p>成為第一個分享的人吧！</p>
-            <a asp-action="Create" class="btn btn-primary mt-2">立即發文</a>
-        </div>
+        @if (Model.TotalPages > 1)
+        {
+            <div class="col-12 d-flex justify-content-center my-4">
+                <nav aria-label="貼文分頁">
+                    <ul class="pagination">
+                        <li class="page-item @(!Model.HasPrevious ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage - 1)">上一頁</a>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">第 @Model.CurrentPage 頁 / 共 @Model.TotalPages 頁 (總計 @Model.TotalItems 則)</span>
+                        </li>
+                        <li class="page-item @(!Model.HasNext ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage + 1)">下一頁</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
     }
 </div>

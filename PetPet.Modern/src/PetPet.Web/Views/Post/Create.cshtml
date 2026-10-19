@@ -1,4 +1,4 @@
-@model PetPet.Domain.Entities.Post
+@model PetPet.Application.Social.CreatePostDto
 @{
     ViewData["Title"] = "新增貼文";
 }
@@ -6,43 +6,70 @@
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="card shadow border-0">
-                <div class="card-body p-5">
-                    <h2 class="card-title text-center mb-4">✏️ 發佈新貼文</h2>
-                    
-                    <form asp-action="Create">
-                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-body p-4 p-md-5">
+                    <h2 class="card-title text-center mb-4 fw-bold">✏️ 發佈新貼文</h2>
+
+                    <form asp-action="Create" method="post">
+                        <input type="hidden" asp-for="CommandId" value="@(Model?.CommandId ?? Guid.NewGuid())" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
                         <div class="mb-3">
-                            <label asp-for="Title" class="form-label fw-bold">標題</label>
-                            <input asp-for="Title" class="form-control form-control-lg" placeholder="例如：今天帶狗狗去公園玩..." required />
-                            <span asp-validation-for="Title" class="text-danger"></span>
+                            <label asp-for="Title" class="form-label fw-bold">貼文標題</label>
+                            <input asp-for="Title" class="form-control form-control-lg rounded-3" placeholder="例如：今天帶狗狗去公園玩..." required maxlength="100" />
+                            <span asp-validation-for="Title" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-4">
-                            <label asp-for="Content" class="form-label fw-bold">內容</label>
-                            <textarea asp-for="Content" class="form-control" rows="6" placeholder="分享一些有趣的故事吧..." required></textarea>
-                            <span asp-validation-for="Content" class="text-danger"></span>
+                            <label asp-for="Content" class="form-label fw-bold">貼文內容</label>
+                            <textarea asp-for="Content" class="form-control rounded-3" rows="6" placeholder="分享毛孩的可愛瞬間或日常趣事吧..." required maxlength="4000"></textarea>
+                            <span asp-validation-for="Content" class="text-danger small"></span>
                         </div>
 
                         <!-- Cover Image Picker -->
                         <div class="mb-4">
-                            <label class="form-label fw-bold">封面圖片 (選填)</label>
-                            <div class="p-3 border rounded bg-light">
-                                <img id="previewCover" src="" class="img-fluid rounded mb-2 d-none" style="max-height: 200px;">
-                                <div class="input-group">
-                                    <input asp-for="ImageUrl" id="inputCover" class="form-control" placeholder="選擇圖片..." readonly />
-                                    <button type="button" class="btn btn-outline-secondary" onclick="openImagePicker('inputCover', 'previewCover')">
-                                        📷 選擇
-                                    </button>
+                            <label class="form-label fw-bold">配圖 (選填預設圖片)</label>
+                            <div class="p-3 border rounded-3 bg-light">
+                                <div class="row g-2 mb-2">
+                                    <div class="col-3 text-center">
+                                        <div class="border rounded p-2 bg-white cursor-pointer preset-choice" onclick="selectPreset('/images/presets/avatar-dog.svg')">
+                                            <img src="/images/presets/avatar-dog.svg" class="img-fluid" style="height: 60px;" alt="狗狗">
+                                            <div class="small text-muted mt-1">狗狗</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3 text-center">
+                                        <div class="border rounded p-2 bg-white cursor-pointer preset-choice" onclick="selectPreset('/images/presets/avatar-cat.svg')">
+                                            <img src="/images/presets/avatar-cat.svg" class="img-fluid" style="height: 60px;" alt="貓咪">
+                                            <div class="small text-muted mt-1">貓咪</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3 text-center">
+                                        <div class="border rounded p-2 bg-white cursor-pointer preset-choice" onclick="selectPreset('/images/presets/avatar-boy.svg')">
+                                            <img src="/images/presets/avatar-boy.svg" class="img-fluid" style="height: 60px;" alt="男孩">
+                                            <div class="small text-muted mt-1">男孩</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3 text-center">
+                                        <div class="border rounded p-2 bg-white cursor-pointer preset-choice" onclick="selectPreset('/images/presets/avatar-girl.svg')">
+                                            <img src="/images/presets/avatar-girl.svg" class="img-fluid" style="height: 60px;" alt="女孩">
+                                            <div class="small text-muted mt-1">女孩</div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <small class="text-muted">點擊選擇可以看到預覽圖。</small>
+                                <div class="input-group">
+                                    <input asp-for="ImageUrl" id="inputCover" class="form-control" placeholder="已選圖片路徑 (選填)" readonly />
+                                    <button type="button" class="btn btn-outline-primary" id="btnOpenPicker" onclick="openImagePicker('inputCover', 'previewCover')">🖼️ 自訂上傳</button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="clearPreset()">清除選擇</button>
+                                </div>
+                                <div class="mt-2 text-center" id="previewCoverContainer" style="display:none;">
+                                    <img id="previewCover" src="" class="img-fluid rounded-3" style="max-height: 120px;" alt="預覽配圖" />
+                                </div>
                             </div>
                         </div>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a asp-action="Index" class="btn btn-light me-md-2">取消</a>
-                            <button type="submit" class="btn btn-primary btn-lg px-5">發佈</button>
+                            <a asp-action="Index" class="btn btn-light rounded-pill px-4 me-md-2">取消</a>
+                            <button type="submit" class="btn btn-primary rounded-pill btn-lg px-5">立即發佈</button>
                         </div>
                     </form>
                 </div>
@@ -55,18 +82,18 @@
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     <partial name="_ImagePicker" />
     <script>
-        // Custom Hook to show image when ID is updated
-        const originalSelectImage = selectImage; // Backup logic
-        
-        // Simple observer to un-hide the img tag if src is set
-         const imgPreview = document.getElementById('previewCover');
-         const imgInput = document.getElementById('inputCover');
-         
-         const observer = new MutationObserver(function(mutations) {
-            if(imgPreview.src && imgPreview.src !== window.location.href) {
-                imgPreview.classList.remove('d-none');
+        function selectPreset(path) {
+            document.getElementById('inputCover').value = path;
+            const preview = document.getElementById('previewCover');
+            if (preview) {
+                preview.src = path;
+                document.getElementById('previewCoverContainer').style.display = 'block';
             }
-         });
-         observer.observe(imgPreview, { attributes: true, attributeFilter: ['src'] });
+        }
+        function clearPreset() {
+            document.getElementById('inputCover').value = '';
+            const container = document.getElementById('previewCoverContainer');
+            if (container) container.style.display = 'none';
+        }
     </script>
 }

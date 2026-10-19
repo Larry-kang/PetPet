@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace PetPet.Domain.Entities;
@@ -11,6 +12,8 @@ public class Like
 
     [Required]
     public string UserEmail { get; set; } = string.Empty;
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation
     public virtual Member User { get; set; } = null!;

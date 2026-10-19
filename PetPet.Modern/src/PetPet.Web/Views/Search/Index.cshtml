@@ -1,0 +1,136 @@
+@model PetPet.Web.Controllers.SearchViewModel
+@{
+    ViewData["Title"] = "搜尋社群貼文";
+    var cities = ViewBag.Cities as List<PetPet.Domain.Entities.City> ?? [];
+}
+
+<div class="container my-4">
+    <div class="mb-4">
+        <h1 class="display-6 fw-bold">🔍 搜尋社群貼文</h1>
+        <p class="text-muted">以關鍵字探索毛孩日常，或依縣市生活圈與熱門度篩選</p>
+    </div>
+
+    <!-- Search & Filter Form -->
+    <div class="card shadow-sm border-0 rounded-3 mb-4 p-4 bg-light">
+        <form method="get" asp-action="Index">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label fw-bold small text-muted">關鍵字</label>
+                    <input type="text" name="q" value="@Model.Query" class="form-control rounded-pill" placeholder="輸入標題或內容關鍵字..." maxlength="100" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold small text-muted">作者縣市</label>
+                    <select name="cityId" class="form-select rounded-pill">
+                        <option value="">全部縣市</option>
+                        @foreach (var city in cities)
+                        {
+                            <option value="@city.Id" selected="@(Model.CityId == city.Id)">@city.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold small text-muted">排序方式</label>
+                    <select name="sort" class="form-select rounded-pill">
+                        <option value="latest" selected="@(Model.Sort == "latest")">最新發布</option>
+                        <option value="likes" selected="@(Model.Sort == "likes")">最多喜歡</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary rounded-pill w-100">搜尋</button>
+                    @if (!string.IsNullOrEmpty(Model.Query) || Model.CityId.HasValue)
+                    {
+                        <a asp-action="Index" class="btn btn-outline-secondary rounded-pill">重設</a>
+                    }
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Search Results -->
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        <span class="text-muted small">共找到 <strong>@Model.TotalItems</strong> 則符合條件的貼文</span>
+    </div>
+
+    @if (!Model.Results.Any())
+    {
+        <div class="card border-0 shadow-sm p-5 text-center rounded-3">
+            <div class="display-1 text-muted mb-3">📭</div>
+            <h4>找不到符合條件的貼文</h4>
+            <p class="text-muted mb-3">試著換個關鍵字搜尋，或放寬作者縣市篩選條件。</p>
+            <div>
+                <a asp-action="Index" class="btn btn-outline-primary rounded-pill px-4">清除篩選條件</a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var item in Model.Results)
+            {
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-sm border-0 rounded-3 overflow-hidden">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <a href="/Members/@item.AuthorPublicId" class="text-decoration-none d-flex align-items-center text-dark">
+                                    <div class="rounded-circle bg-light border d-flex justify-content-center align-items-center overflow-hidden me-2" style="width: 38px; height: 38px;">
+                                        @if (!string.IsNullOrEmpty(item.AuthorPhoto))
+                                        {
+                                            <img src="@item.AuthorPhoto" class="w-100 h-100 object-fit-cover" alt="@item.AuthorName">
+                                        }
+                                        else
+                                        {
+                                            <span>@(item.AuthorName.Length > 0 ? item.AuthorName.Substring(0, 1) : "?")</span>
+                                        }
+                                    </div>
+                                    <span class="fw-bold">@item.AuthorName</span>
+                                </a>
+                                <small class="text-muted ms-auto">@item.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</small>
+                            </div>
+
+                            <h5 class="fw-bold mb-2">
+                                <a asp-controller="Post" asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none text-dark">
+                                    @item.Title
+                                </a>
+                            </h5>
+                            <p class="card-text text-secondary small" style="white-space: pre-line;">@item.Snippet</p>
+
+                            @if (!string.IsNullOrEmpty(item.ImageUrl))
+                            {
+                                <div class="my-2">
+                                    <a asp-controller="Post" asp-action="Details" asp-route-id="@item.Id">
+                                        <img src="@item.ImageUrl" class="rounded w-100 object-fit-cover" style="max-height: 200px;" alt="@item.Title">
+                                    </a>
+                                </div>
+                            }
+                        </div>
+                        <div class="card-footer bg-white border-top-0 px-4 pb-3 d-flex justify-content-between align-items-center">
+                            <span class="text-muted small">❤️ @item.LikeCount | 💬 @item.CommentCount</span>
+                            <a asp-controller="Post" asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary rounded-pill">
+                                查看詳情
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="d-flex justify-content-center my-4">
+                <nav aria-label="搜尋結果分頁">
+                    <ul class="pagination">
+                        <li class="page-item @(!Model.HasPrevious ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-q="@Model.Query" asp-route-cityId="@Model.CityId" asp-route-sort="@Model.Sort" asp-route-page="@(Model.CurrentPage - 1)">上一頁</a>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">第 @Model.CurrentPage 頁 / 共 @Model.TotalPages 頁</span>
+                        </li>
+                        <li class="page-item @(!Model.HasNext ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-q="@Model.Query" asp-route-cityId="@Model.CityId" asp-route-sort="@Model.Sort" asp-route-page="@(Model.CurrentPage + 1)">下一頁</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+    }
+</div>

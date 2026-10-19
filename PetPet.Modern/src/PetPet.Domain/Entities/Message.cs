@@ -1,6 +1,4 @@
 using System;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PetPet.Domain.Entities;
 
@@ -8,21 +6,17 @@ public class Message
 {
     public int Id { get; set; }
 
-    [Required]
     public string SenderEmail { get; set; } = null!;
-
-    [ForeignKey("SenderEmail")]
     public virtual Member Sender { get; set; } = null!;
 
-    [Required]
     public string ReceiverEmail { get; set; } = null!;
-
-    [ForeignKey("ReceiverEmail")]
     public virtual Member Receiver { get; set; } = null!;
 
-    [Required]
-    public string Content { get; set; } = "";
-    
+    public string ConversationPair { get; set; } = null!;
+    public string Content { get; set; } = string.Empty;
+
     public DateTime SentAt { get; set; } = DateTime.UtcNow;
-    public bool IsRead { get; set; }
+    public DateTime? ReadAt { get; set; }
+    public bool IsRead { get => ReadAt.HasValue; set { ReadAt = value ? (ReadAt ?? DateTime.UtcNow) : null; } }
+    public Guid ClientMessageId { get; set; } = Guid.NewGuid();
 }

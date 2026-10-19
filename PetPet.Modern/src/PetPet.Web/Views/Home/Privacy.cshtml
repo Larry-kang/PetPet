@@ -1,6 +1,66 @@
-﻿@{
-    ViewData["Title"] = "Privacy Policy";
+@{
+    ViewData["Title"] = "隱私權政策與個人資料保護宣告";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm border-0 rounded-4 p-4 p-md-5">
+                <h1 class="fw-bold text-primary mb-4"><i class="bi bi-shield-check me-2"></i>@ViewData["Title"]</h1>
+                <p class="text-muted">最後更新日期：2026 年 10 月 14 日</p>
+                <hr class="mb-4">
+
+                <div class="mb-4">
+                    <h4 class="fw-bold text-dark mb-3">一、公開資料投影政策 (Public Projection Policy)</h4>
+                    <p class="text-secondary leading-relaxed">
+                        PetPet 嚴格遵守「最小化公開原則 (Data Minimization)」。於全站任何公開瀏覽場景（包含社群動態牆、公開個人主頁、搜尋結果、好友清單、留言列表等），系統僅會投影必要之公開欄位：
+                    </p>
+                    <ul class="text-secondary">
+                        <li><strong>允許公開欄位：</strong> 不可逆識別代碼 (PublicId)、暱稱 (Name)、個人簡介 (Bio)、居住城市 (CityName)、個人公開照片 (Photo)。</li>
+                        <li><strong>嚴格保密欄位：</strong> 電子郵件信箱 (Email)、行動電話 (Phone)、出生年月日 (Birthday)、性別 (Gender)、密碼雜湊與安全戮印 (SecurityStamp) 等敏感個資，絕對禁止投影至公開 DTO 或未受保護之 HTML 視圖。</li>
+                    </ul>
+                </div>
+
+                <div class="mb-4">
+                    <h4 class="fw-bold text-dark mb-3">二、好友互動與雙向封鎖隔離機制 (Blocking & Relationship Protection)</h4>
+                    <p class="text-secondary leading-relaxed">
+                        為保障會員社交體驗與隱私安全，PetPet 提供雙向封鎖機制：
+                    </p>
+                    <ul class="text-secondary">
+                        <li>當 A 會員封鎖 B 會員後，雙方即時進入相互隔離狀態：任何一方均無法查看對方之個人檔案、寵物名片或社群貼文。</li>
+                        <li>封鎖生效後，雙方不得互相發送好友邀請，既有之好友關係將自動失效；即時通訊 Hub 與 HTTP API 亦將立即拒絕傳送新訊息或標記已讀。</li>
+                    </ul>
+                </div>
+
+                <div class="mb-4">
+                    <h4 class="fw-bold text-dark mb-3">三、多媒體上傳與照片所有權管理 (Media Ownership & Security)</h4>
+                    <p class="text-secondary leading-relaxed">
+                        會員上傳之寵物或個人照片受到嚴格之多層資安防護：
+                    </p>
+                    <ul class="text-secondary">
+                        <li><strong>檔案安全檢驗：</strong> 伺服器端嚴格檢查 Magic Bytes、限制最大檔案 5 MiB、解析度 4096×4096 且總像素小於 1,600 萬，拒絕 SVG、GIF 動畫及惡意偽裝指令碼。</li>
+                        <li><strong>中繼資料抹除：</strong> 所有上傳圖片經由後端安全解碼後重新編碼，自動剝除 EXIF 地理定位與拍攝相機等潛在個資。</li>
+                        <li><strong>隔離儲存與權限授權：</strong> 檔案存放於非公開伺服器目錄 (非 wwwroot)，存取均透過 <code>/Media/{id}</code> 代理並帶有 <code>X-Content-Type-Options: nosniff</code> 標頭，僅允許該檔案之擁有者或具公開關聯 (如公開寵物、已發布貼文) 之場景讀取。</li>
+                    </ul>
+                </div>
+
+                <div class="mb-4">
+                    <h4 class="fw-bold text-dark mb-3">四、會話存活期與即時安全撤銷 (Session Lifecycle & Security Revocation)</h4>
+                    <p class="text-secondary leading-relaxed">
+                        系統採用嚴謹的認證權杖與連線管理政策：
+                    </p>
+                    <ul class="text-secondary">
+                        <li><strong>會話時效：</strong> 會員登入後之驗證 Cookie 具備 30 分鐘閒置滑動逾期 (Sliding Expiration)，且最長絕對存活期限制為 8 小時 (Absolute Lifetime)，逾期後需重新驗證身分。</li>
+                        <li><strong>即時撤銷機制：</strong> 當會員變更密碼、系統管理員執行停權或角色權限異動時，系統自動更新會員 SecurityStamp，現存之 HTTP 連線與 SignalR 即時長連線將於下一次操作立即失效並強制登出。</li>
+                    </ul>
+                </div>
+
+                <div class="mt-4 pt-3 border-top text-center">
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-outline-primary px-4 rounded-pill">
+                        返回首頁
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

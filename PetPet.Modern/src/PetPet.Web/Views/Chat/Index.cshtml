@@ -1,72 +1,127 @@
-@model List<PetPet.Domain.Entities.Message>
+@using PetPet.Application.Chat
+@model List<ChatContactDto>
 @{
     ViewData["Title"] = "聊天室";
-    string currentEmail = ViewBag.CurrentEmail;
-    string targetEmail = ViewBag.TargetEmail;
-    string targetName = ViewBag.TargetName;
-    var contacts = ViewBag.Contacts as List<PetPet.Domain.Entities.Member>;
+    var activeConv = ViewBag.ActiveConversation as ChatConversationDto;
+    Guid? viewerPublicId = ViewBag.ViewerPublicId as Guid?;
 }
 
 <div class="container py-4" style="height: 85vh;">
-    <div class="row h-100">
+    @Html.AntiForgeryToken()
+    <div class="row h-100 g-3">
         <!-- Contacts Sidebar -->
-        <div class="col-md-4 h-100 overflow-auto">
-            <div class="glass-card p-3 h-100">
-                <h4 class="mb-3">💬 聯絡人</h4>
-                <div class="list-group">
-                    @foreach (var contact in contacts)
+        <div class="col-md-4 h-100">
+            <div class="glass-card p-3 h-100 d-flex flex-column shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="m-0 fw-bold">💬 訊息聯絡人</h5>
+                    <span id="connBadge" class="badge bg-secondary">連線中...</span>
+                </div>
+                <div class="list-group list-group-flush flex-grow-1 overflow-auto">
+                    @if (Model != null && Model.Count > 0)
                     {
-                        <a href="/Chat/Index?with=@contact.Email" class="list-group-item list-group-item-action @(targetEmail == contact.Email ? "active" : "") d-flex align-items-center bg-transparent border-0 text-white">
-                            <img src="/images/default-user.png" class="rounded-circle me-3" width="40" height="40" />
-                            <div>
-                                <div class="fw-bold">@contact.Name</div>
-                                <small class="text-white-50">Click to chat</small>
-                            </div>
-                        </a>
+                        foreach (var contact in Model)
+                        {
+                            bool isActive = activeConv != null && activeConv.TargetPublicId == contact.PublicId;
+                            <a href="/Chat?with=@contact.PublicId" class="list-group-item list-group-item-action @(isActive ? "active" : "") d-flex align-items-center rounded-3 mb-1 p-2 border-0">
+                                <img src="@(string.IsNullOrEmpty(contact.Photo) ? "/images/presets/avatar-dog.svg" : contact.Photo)" class="rounded-circle me-3 border" width="44" height="44" style="object-fit: cover;" alt="@contact.Name" />
+                                <div class="flex-grow-1 text-truncate">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="fw-bold text-truncate">@contact.Name</div>
+                                        @if (contact.UnreadCount > 0)
+                                        {
+                                            <span class="badge bg-danger rounded-pill">@contact.UnreadCount</span>
+                                        }
+                                    </div>
+                                    <small class="text-white-50 text-truncate d-block">
+                                        @(string.IsNullOrEmpty(contact.LastMessageSnippet) ? (contact.CanSend ? "開始聊天" : "歷史對話") : contact.LastMessageSnippet)
+                                    </small>
+                                </div>
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center text-white-50 py-5">
+                            <p>尚無好友或對話記錄</p>
+                            <a href="/Friend" class="btn btn-sm btn-outline-light">前往好友名單</a>
+                        </div>
                     }
                 </div>
             </div>
         </div>
 
-        <!-- Chat Area -->
+        <!-- Chat Main Panel -->
         <div class="col-md-8 h-100">
-            @if (!string.IsNullOrEmpty(targetEmail))
+            @if (activeConv != null)
             {
-                <div class="glass-card p-0 h-100 d-flex flex-column">
-                    <!-- Header -->
-                    <div class="p-3 border-bottom border-secondary bg-white bg-opacity-10">
-                        <h5 class="m-0">Talking with <strong>@targetName</strong></h5>
+                <div class="glass-card p-0 h-100 d-flex flex-column shadow-sm">
+                    <!-- Chat Header -->
+                    <div class="p-3 border-bottom border-secondary bg-white bg-opacity-10 d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <img src="@(string.IsNullOrEmpty(activeConv.TargetPhoto) ? "/images/presets/avatar-dog.svg" : activeConv.TargetPhoto)" class="rounded-circle me-3 border" width="40" height="40" style="object-fit: cover;" alt="@activeConv.TargetName" />
+                            <div>
+                                <h6 class="m-0 fw-bold">@activeConv.TargetName</h6>
+                                <small class="text-white-50">
+                                    @(activeConv.CanSend ? "在線好友" : "唯讀模式")
+                                </small>
+                            </div>
+                        </div>
+                        <a href="/Members/@activeConv.TargetPublicId" class="btn btn-sm btn-outline-light">查看主頁</a>
                     </div>
 
-                    <!-- Messages -->
+                    @if (!activeConv.CanSend)
+                    {
+                        <div class="alert alert-warning m-3 py-2 px-3 small border-0" role="alert">
+                            ⚠️ <strong>僅供檢視歷史紀錄：</strong>@(activeConv.ReasonCannotSend ?? "非好友或已被封鎖，無法發送新訊息。")
+                        </div>
+                    }
+
+                    <!-- Messages List -->
                     <div id="messagesList" class="flex-grow-1 p-3 overflow-auto d-flex flex-column gap-2">
-                        @foreach (var msg in Model)
+                        <div class="text-center mb-2">
+                            <button id="btnLoadMore" class="btn btn-sm btn-outline-secondary" style="display: @(activeConv.Messages.Count >= 50 ? "inline-block" : "none");">載入更早訊息</button>
+                        </div>
+                        @foreach (var msg in activeConv.Messages)
                         {
-                            <div class="d-flex @(msg.SenderEmail == currentEmail ? "justify-content-end" : "justify-content-start")">
-                                <div class="p-2 px-3 rounded-4 params" 
-                                     style="max-width: 70%; background-color: @(msg.SenderEmail == currentEmail ? "#0d6efd" : "#495057");">
-                                    @msg.Content
-                                    <div class="text-end" style="font-size: 0.7em; opacity: 0.7;">@msg.SentAt.ToString("HH:mm")</div>
+                            <div class="d-flex @(msg.IsMine ? "justify-content-end" : "justify-content-start") message-item" data-id="@msg.Id" data-sentat="@msg.SentAt.ToString("o")">
+                                <div class="p-2 px-3 rounded-4" style="max-width: 75%; background-color: @(msg.IsMine ? "#0d6efd" : "#495057"); color: white;">
+                                    <div class="msg-content" style="white-space: pre-wrap; word-break: break-word;">@msg.Content</div>
+                                    <div class="text-end d-flex justify-content-end align-items-center gap-1" style="font-size: 0.72em; opacity: 0.75;">
+                                        <span>@msg.SentAt.ToLocalTime().ToString("HH:mm")</span>
+                                        @if (msg.IsMine)
+                                        {
+                                            <span class="read-receipt">@(msg.ReadAt.HasValue ? "已讀" : "已送出")</span>
+                                        }
+                                    </div>
                                 </div>
                             </div>
                         }
                     </div>
 
-                    <!-- Input -->
+                    <!-- Input Area -->
                     <div class="p-3 border-top border-secondary bg-white bg-opacity-10">
-                        <div class="input-group">
-                            <input type="text" id="messageInput" class="form-control bg-dark text-white border-secondary" placeholder="Type a message..." autocomplete="off">
-                            <button class="btn btn-primary" id="sendButton">✈️ Send</button>
-                        </div>
+                        @if (activeConv.CanSend)
+                        {
+                            <div class="input-group">
+                                <input type="text" id="messageInput" class="form-control bg-dark text-white border-secondary" placeholder="輸入訊息 (1-2000字)..." maxlength="2000" autocomplete="off" />
+                                <button class="btn btn-primary px-4" id="sendButton">發送</button>
+                            </div>
+                            <div id="sendFeedback" class="small text-danger mt-1" style="display:none;"></div>
+                        }
+                        else
+                        {
+                            <input type="text" class="form-control bg-dark text-white-50 border-secondary" value="目前無法發送新訊息" disabled />
+                        }
                     </div>
                 </div>
             }
             else
             {
-                <div class="glass-card h-100 d-flex align-items-center justify-content-center">
-                    <div class="text-center text-white-50">
-                        <h1>👈</h1>
-                        <p>請選擇一位聯絡人開始聊天</p>
+                <div class="glass-card h-100 d-flex align-items-center justify-content-center text-center p-4">
+                    <div class="text-white-50">
+                        <div style="font-size: 3rem;">💬</div>
+                        <h5 class="mt-3">請選擇左側聯絡人開始對話</h5>
+                        <p class="small">與好友即時分享毛孩生活點滴</p>
                     </div>
                 </div>
             }
@@ -75,79 +130,353 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
-    <script>
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/chatHub")
-            .build();
+    <script src="~/lib/signalr.min.js"></script>
+    @if (activeConv != null)
+    {
+        <script>
+            const targetPublicId = "@activeConv.TargetPublicId";
+            window.targetPublicId = targetPublicId;
+            const canSend = @(activeConv.CanSend ? "true" : "false");
+            const messagesList = document.getElementById("messagesList");
+            const btnLoadMore = document.getElementById("btnLoadMore");
+            const connBadge = document.getElementById("connBadge");
+            const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
 
-        // Receive Message
-        connection.on("ReceiveMessage", function (senderEmail, message) {
-            const currentTarget = "@targetEmail";
-            const myEmail = "@currentEmail";
-
-            if (senderEmail === currentTarget || senderEmail === myEmail) {
-                const isMe = senderEmail === myEmail;
-                const alignment = isMe ? "justify-content-end" : "justify-content-start";
-                const bg = isMe ? "#0d6efd" : "#495057";
-                
-                const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-                const html = `
-                    <div class="d-flex ${alignment}">
-                        <div class="p-2 px-3 rounded-4 params" 
-                             style="max-width: 70%; background-color: ${bg};">
-                            ${message} // 
-                            <div class="text-end" style="font-size: 0.7em; opacity: 0.7;">${time}</div>
-                        </div>
-                    </div>`;
-                
-                const list = document.getElementById("messagesList");
-                list.insertAdjacentHTML('beforeend', html);
-                list.scrollTop = list.scrollHeight;
+            // Auto scroll to bottom
+            if (messagesList) {
+                messagesList.scrollTop = messagesList.scrollHeight;
             }
-        });
 
-        connection.start().then(function () {
-            document.getElementById("sendButton").disabled = false;
-        }).catch(function (err) {
-            return console.error(err.toString());
-        });
+            // SignalR Connection with retry
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/chatHub")
+                .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+                .build();
+            window.connection = connection;
 
-        // Send Message
-        document.getElementById("sendButton")?.addEventListener("click", function (event) {
-            const message = document.getElementById("messageInput").value;
-            const targetEmail = "@targetEmail";
+            function updateConnectionState(state, badgeClass, text) {
+                if (connBadge) {
+                    connBadge.className = `badge ${badgeClass}`;
+                    connBadge.textContent = text;
+                }
+                const sendBtn = document.getElementById("sendButton");
+                if (sendBtn && canSend) {
+                    sendBtn.disabled = (state !== "Connected");
+                }
+            }
 
-            if(message && targetEmail) {
-                // UI Optimistic Update
-                const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                 const html = `
-                    <div class="d-flex justify-content-end">
-                        <div class="p-2 px-3 rounded-4 params" 
-                             style="max-width: 70%; background-color: #0d6efd;">
-                            ${message}
-                            <div class="text-end" style="font-size: 0.7em; opacity: 0.7;">${time}</div>
-                        </div>
-                    </div>`;
-                 const list = document.getElementById("messagesList");
-                 list.insertAdjacentHTML('beforeend', html);
-                 list.scrollTop = list.scrollHeight;
+            connection.onreconnecting((error) => {
+                updateConnectionState("Reconnecting", "bg-warning text-dark", "重新連線中...");
+            });
 
-                 // Invoke Hub
-                 connection.invoke("SendMessage", targetEmail, message).catch(function (err) {
-                    return console.error(err.toString());
+            connection.onreconnected((connectionId) => {
+                updateConnectionState("Connected", "bg-success", "已連線");
+                // Resync unread messages
+                syncLatestMessages();
+            });
+
+            connection.onclose((error) => {
+                updateConnectionState("Disconnected", "bg-danger", "已斷線");
+            });
+
+            // Start connection with retry loop
+            async function startSignalR() {
+                try {
+                    await connection.start();
+                    updateConnectionState("Connected", "bg-success", "已連線");
+                } catch (err) {
+                    updateConnectionState("Disconnected", "bg-danger", "連線失敗，5秒後重試");
+                    setTimeout(startSignalR, 5000);
+                }
+            }
+            startSignalR();
+
+            // Receive message via SignalR
+            connection.on("ReceiveMessage", function (data) {
+                if (data.senderPublicId === targetPublicId) {
+                    appendIncomingMessage(data);
+                    // Mark as read
+                    markRead(data.id);
+                }
+            });
+
+            // ACK message receipt
+            connection.on("MessageAck", function (ack) {
+                const pendingEl = document.querySelector(`[data-client-id="${ack.clientMessageId}"]`);
+                if (pendingEl) {
+                    pendingEl.dataset.id = ack.messageId;
+                    const statusSpan = pendingEl.querySelector(".read-receipt");
+                    if (statusSpan) statusSpan.textContent = "已送出";
+                }
+            });
+
+            // Read receipts updated
+            connection.on("MessagesRead", function (readInfo) {
+                if (readInfo.readerPublicId === targetPublicId) {
+                    const myMessages = document.querySelectorAll('.message-item');
+                    myMessages.forEach(el => {
+                        const id = parseInt(el.dataset.id);
+                        if (!isNaN(id) && id <= readInfo.upToMessageId) {
+                            const statusSpan = el.querySelector(".read-receipt");
+                            if (statusSpan) statusSpan.textContent = "已讀";
+                        }
+                    });
+                }
+            });
+
+            function appendIncomingMessage(data) {
+                // Deduplicate by messageId
+                if (document.querySelector(`[data-id="${data.id}"]`)) return;
+
+                const wrapper = document.createElement("div");
+                wrapper.className = "d-flex justify-content-start message-item";
+                wrapper.dataset.id = data.id;
+                wrapper.dataset.sentat = data.sentAt;
+
+                const bubble = document.createElement("div");
+                bubble.className = "p-2 px-3 rounded-4";
+                bubble.style.maxWidth = "75%";
+                bubble.style.backgroundColor = "#495057";
+                bubble.style.color = "white";
+
+                const contentDiv = document.createElement("div");
+                contentDiv.className = "msg-content";
+                contentDiv.style.whiteSpace = "pre-wrap";
+                contentDiv.style.wordBreak = "break-word";
+                contentDiv.textContent = data.content; // Safe text output (no innerHTML)
+
+                const timeDiv = document.createElement("div");
+                timeDiv.className = "text-end";
+                timeDiv.style.fontSize = "0.72em";
+                timeDiv.style.opacity = "0.75";
+                const d = new Date(data.sentAt);
+                timeDiv.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                bubble.appendChild(contentDiv);
+                bubble.appendChild(timeDiv);
+                wrapper.appendChild(bubble);
+                messagesList.appendChild(wrapper);
+
+                messagesList.scrollTop = messagesList.scrollHeight;
+            }
+
+            function appendOutgoingMessage(clientMessageId, content) {
+                const wrapper = document.createElement("div");
+                wrapper.className = "d-flex justify-content-end message-item";
+                wrapper.dataset.clientId = clientMessageId;
+
+                const bubble = document.createElement("div");
+                bubble.className = "p-2 px-3 rounded-4";
+                bubble.style.maxWidth = "75%";
+                bubble.style.backgroundColor = "#0d6efd";
+                bubble.style.color = "white";
+
+                const contentDiv = document.createElement("div");
+                contentDiv.className = "msg-content";
+                contentDiv.style.whiteSpace = "pre-wrap";
+                contentDiv.style.wordBreak = "break-word";
+                contentDiv.textContent = content;
+
+                const metaDiv = document.createElement("div");
+                metaDiv.className = "text-end d-flex justify-content-end align-items-center gap-1";
+                metaDiv.style.fontSize = "0.72em";
+                metaDiv.style.opacity = "0.75";
+
+                const timeSpan = document.createElement("span");
+                const d = new Date();
+                timeSpan.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                const statusSpan = document.createElement("span");
+                statusSpan.className = "read-receipt";
+                statusSpan.textContent = "傳送中...";
+
+                metaDiv.appendChild(timeSpan);
+                metaDiv.appendChild(statusSpan);
+
+                bubble.appendChild(contentDiv);
+                bubble.appendChild(metaDiv);
+                wrapper.appendChild(bubble);
+                messagesList.appendChild(wrapper);
+
+                messagesList.scrollTop = messagesList.scrollHeight;
+                return wrapper;
+            }
+
+            async function sendMessage() {
+                if (!canSend) return;
+                const input = document.getElementById("messageInput");
+                const feedback = document.getElementById("sendFeedback");
+                const content = input.value.trim();
+                if (!content) return;
+
+                const clientMessageId = crypto.randomUUID();
+                const itemEl = appendOutgoingMessage(clientMessageId, content);
+                input.value = "";
+                feedback.style.display = "none";
+
+                try {
+                    const response = await fetch('/Chat/Send', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({
+                            targetPublicId: targetPublicId,
+                            clientMessageId: clientMessageId,
+                            content: content
+                        })
+                    });
+
+                    if (response.ok) {
+                        const res = await response.json();
+                        itemEl.dataset.id = res.messageId;
+                        const statusSpan = itemEl.querySelector(".read-receipt");
+                        if (statusSpan) statusSpan.textContent = "已送出";
+                    } else if (response.status === 409) {
+                        const statusSpan = itemEl.querySelector(".read-receipt");
+                        if (statusSpan) statusSpan.textContent = "衝突失敗";
+                        feedback.textContent = "發送衝突：重複的 ClientMessageId。";
+                        feedback.style.display = "block";
+                    } else {
+                        const err = await response.json().catch(() => ({ errorMessage: "傳送失敗" }));
+                        const statusSpan = itemEl.querySelector(".read-receipt");
+                        if (statusSpan) statusSpan.textContent = "失敗";
+                        feedback.textContent = err.errorMessage || "傳送失敗，請稍後再試。";
+                        feedback.style.display = "block";
+                    }
+                } catch (ex) {
+                    const statusSpan = itemEl.querySelector(".read-receipt");
+                    if (statusSpan) statusSpan.textContent = "網路錯誤";
+                    feedback.textContent = "連線失敗，請檢查網路狀態。";
+                    feedback.style.display = "block";
+                }
+            }
+
+            async function markRead(lastId) {
+                try {
+                    await fetch('/Chat/MarkRead', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({
+                            targetPublicId: targetPublicId,
+                            upToMessageId: lastId
+                        })
+                    });
+                } catch (e) {
+                    // best effort
+                }
+            }
+
+            async function syncLatestMessages() {
+                try {
+                    const res = await fetch(`/Chat/History?targetPublicId=${targetPublicId}&limit=20`);
+                    if (res.ok) {
+                        const messages = await res.json();
+                        messages.forEach(m => {
+                            if (!m.isMine) {
+                                appendIncomingMessage({
+                                    id: m.id,
+                                    senderPublicId: m.senderPublicId,
+                                    content: m.content,
+                                    sentAt: m.sentAt
+                                });
+                            }
+                        });
+                    }
+                } catch (e) { }
+            }
+
+            // Load more earlier messages
+            if (btnLoadMore) {
+                btnLoadMore.addEventListener("click", async () => {
+                    const firstMsg = document.querySelector(".message-item");
+                    if (!firstMsg) return;
+
+                    const beforeId = firstMsg.dataset.id;
+                    const beforeSentAt = firstMsg.dataset.sentat;
+                    if (!beforeId || !beforeSentAt) return;
+
+                    btnLoadMore.disabled = true;
+                    btnLoadMore.textContent = "載入中...";
+
+                    try {
+                        const res = await fetch(`/Chat/History?targetPublicId=${targetPublicId}&beforeSentAt=${encodeURIComponent(beforeSentAt)}&beforeId=${beforeId}&limit=50`);
+                        if (res.ok) {
+                            const olderMessages = await res.json();
+                            if (olderMessages.length < 50) {
+                                btnLoadMore.style.display = "none";
+                            }
+
+                            const oldScrollHeight = messagesList.scrollHeight;
+
+                            // Insert older messages right after btnLoadMore container
+                            olderMessages.reverse().forEach(m => {
+                                const wrapper = document.createElement("div");
+                                wrapper.className = `d-flex ${m.isMine ? "justify-content-end" : "justify-content-start"} message-item`;
+                                wrapper.dataset.id = m.id;
+                                wrapper.dataset.sentat = m.sentAt;
+
+                                const bubble = document.createElement("div");
+                                bubble.className = "p-2 px-3 rounded-4";
+                                bubble.style.maxWidth = "75%";
+                                bubble.style.backgroundColor = m.isMine ? "#0d6efd" : "#495057";
+                                bubble.style.color = "white";
+
+                                const contentDiv = document.createElement("div");
+                                contentDiv.className = "msg-content";
+                                contentDiv.style.whiteSpace = "pre-wrap";
+                                contentDiv.style.wordBreak = "break-word";
+                                contentDiv.textContent = m.content;
+
+                                const metaDiv = document.createElement("div");
+                                metaDiv.className = "text-end d-flex justify-content-end align-items-center gap-1";
+                                metaDiv.style.fontSize = "0.72em";
+                                metaDiv.style.opacity = "0.75";
+
+                                const timeSpan = document.createElement("span");
+                                const d = new Date(m.sentAt);
+                                timeSpan.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                                metaDiv.appendChild(timeSpan);
+                                if (m.isMine) {
+                                    const statusSpan = document.createElement("span");
+                                    statusSpan.className = "read-receipt";
+                                    statusSpan.textContent = m.readAt ? "已讀" : "已送出";
+                                    metaDiv.appendChild(statusSpan);
+                                }
+
+                                bubble.appendChild(contentDiv);
+                                bubble.appendChild(metaDiv);
+                                wrapper.appendChild(bubble);
+
+                                btnLoadMore.parentElement.insertAdjacentElement("afterend", wrapper);
+                            });
+
+                            messagesList.scrollTop = messagesList.scrollHeight - oldScrollHeight;
+                        }
+                    } catch (e) {
+                        btnLoadMore.textContent = "載入失敗";
+                    } finally {
+                        btnLoadMore.disabled = false;
+                        if (btnLoadMore.style.display !== "none") {
+                            btnLoadMore.textContent = "載入更早訊息";
+                        }
+                    }
                 });
-                
-                document.getElementById("messageInput").value = "";
             }
-            event.preventDefault();
-        });
-        
-        // Auto Scroll to bottom on load
-        window.onload = function() {
-            const list = document.getElementById("messagesList");
-            if(list) list.scrollTop = list.scrollHeight;
-        };
-    </script>
+
+            // Send events
+            document.getElementById("sendButton")?.addEventListener("click", sendMessage);
+            document.getElementById("messageInput")?.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        </script>
+    }
 }

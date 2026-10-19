@@ -1,0 +1,70 @@
+@model List<PetPet.Web.Controllers.BlockedUserDto>
+@{
+    ViewData["Title"] = "封鎖名單管理";
+}
+
+<div class="container my-4">
+    <div class="mb-4">
+        <h1 class="display-6 fw-bold">🚫 封鎖名單管理</h1>
+        <p class="text-muted">被封鎖的會員將無法與您互動，系統將自動隱藏雙方之貼文動態、推薦與私訊</p>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="card border-0 shadow-sm p-5 text-center rounded-3">
+            <div class="display-1 text-muted mb-3">🕊️</div>
+            <h4>目前沒有任何封鎖名單</h4>
+            <p class="text-muted">您與所有毛友皆保持良好健康的互動社群環境！</p>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+            <div class="list-group list-group-flush">
+                @foreach (var user in Model)
+                {
+                    <div class="list-group-item p-3 d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-light border d-flex justify-content-center align-items-center overflow-hidden me-3" style="width: 48px; height: 48px;">
+                                @if (!string.IsNullOrEmpty(user.BlockedPhoto))
+                                {
+                                    <img src="@user.BlockedPhoto" class="w-100 h-100 object-fit-cover" alt="@user.BlockedName">
+                                }
+                                else
+                                {
+                                    <span class="fs-4 text-secondary">@(user.BlockedName.Length > 0 ? user.BlockedName.Substring(0, 1) : "?")</span>
+                                }
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-0">@user.BlockedName</h6>
+                                <small class="text-muted">封鎖時間：@user.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</small>
+                            </div>
+                        </div>
+
+                        <form asp-action="Remove" method="post" onsubmit="return confirm('確定要解除對 @user.BlockedName 的封鎖嗎？');">
+                            <input type="hidden" name="id" value="@user.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                解除封鎖
+                            </button>
+                        </form>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
