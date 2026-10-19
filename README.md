@@ -38,6 +38,12 @@ dotnet test PetPet.Modern/PetPet.Modern.sln
 
 建議展示路線：訪客動態牆 → 飼主登入 → 寵物管理 → 好友邀請 → 兩個瀏覽器視窗互傳訊息 → 管理員檢舉審核。
 
+## 展示畫面
+
+以下為本機 Demo 實際操作畫面，帳號與內容均為合成資料。[查看完整展示圖集](docs/demo-gallery.md)。
+
+![本機展示首頁](docs/images/demo-overview.png)
+
 ## 版本與開發分工
 
 - [PetPet.Modern](PetPet.Modern/README.md)：ASP.NET Core MVC、EF Core、SQLite、SignalR，提供會員驗證、寵物、社群、好友、封鎖、通知、搜尋與聊天。

@@ -1,5 +1,8 @@
 name: PetPet CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ "master", "main", "codex/**" ]
@@ -12,10 +15,10 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v7.0.1
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v6.0.0
       with:
         dotnet-version: 8.0.x
 
